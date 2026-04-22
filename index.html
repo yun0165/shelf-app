@@ -239,6 +239,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--light-bg);
       <div class="ts-box"><div class="ts-val green" id="tsPro">0</div><div class="ts-lbl">수익(만원)</div></div>
     </div>
   </div>
+  <button onclick="kakaoBackup()" style="width:100%;max-width:380px;background:#FEE500;color:#3C1E1E;border:none;padding:12px;border-radius:4px;font-family:'Black Han Sans',sans-serif;font-size:13px;letter-spacing:1px;cursor:pointer;margin-bottom:10px;">💬 카카오톡으로 백업하기</button>
   <div class="phone-grid" id="phoneGrid"></div>
   <p style="font-size:11px;color:var(--steel);text-align:center">✏️ 버튼으로 폰 이름 수정 가능</p>
 </div>
@@ -591,7 +592,44 @@ function pickPhone(i) {
 function goSelect() {
   document.getElementById('phoneScreen').style.display='flex';
   document.getElementById('mainApp').style.display='none';
-  function exportExcel() {
+  function kakaoBackup() {
+  var text = '📦 철제선반 판매일지 백업\n';
+  text += new Date().toLocaleDateString('ko-KR') + '\n\n';
+  var pnames = JSON.parse(localStorage.getItem('pNames') || 'null') || ['폰 1','폰 2','폰 3','폰 4','폰 5','폰 6','폰 7','폰 8','폰 9','폰 10'];
+  var TRADE = {direct:'직거래', myship:'내재고택배', ddl:'둘둘랙택배'};
+  var totalQty=0, totalProfit=0;
+  for (var i=0; i<10; i++) {
+    var recs = JSON.parse(localStorage.getItem('recs_'+i) || '[]');
+    if (!recs.length) continue;
+    var pname = pnames[i] || ('폰 '+(i+1));
+    text += '📱 ' + pname + '\n';
+    recs.forEach(function(r) {
+      text += r.date + ' | ' + (r.color||'') + ' | ' + (TRADE[r.trade]||r.trade||'') + ' | ' + r.qty + '개 | ' + r.sale.toLocaleString() + '원 | 수익 ' + r.profit.toLocaleString() + '원\n';
+      totalQty += r.qty;
+      totalProfit += r.profit;
+    });
+    text += '\n';
+  }
+  text += '─────────────\n';
+  text += '총 판매: ' + totalQty + '개\n';
+  text += '총 수익: ' + totalProfit.toLocaleString() + '원\n';
+  
+  if (navigator.share) {
+    navigator.share({ text: text }).catch(function(){
+      navigator.clipboard.writeText(text).then(function(){
+        alert('클립보드에 복사됐어요!\n카카오톡 열어서 붙여넣기 하세요 😊');
+      });
+    });
+  } else {
+    navigator.clipboard.writeText(text).then(function(){
+      alert('클립보드에 복사됐어요!\n카카오톡 열어서 붙여넣기 하세요 😊');
+    }).catch(function(){
+      prompt('아래 텍스트를 복사해서 카카오톡에 붙여넣으세요:', text);
+    });
+  }
+}
+
+function exportExcel() {
   var csv = '\uFEFF' + '폰,판매일,색상,거래방법,수량,원가(원),배송비(원),판매가총액(원),수익(원),구매자이름,연락처,주소,택배사,운송장번호,메모\n';
   var TRADE = {direct:'직거래', myship:'내재고택배', ddl:'둘둘랙택배'};
   var pnames = JSON.parse(localStorage.getItem('pNames') || 'null') || ['폰 1','폰 2','폰 3','폰 4','폰 5','폰 6','폰 7','폰 8'];
@@ -1041,46 +1079,4 @@ function renderStock(){
   else if(stockFilter==='white') data=data.filter(s=>s.color==='화이트');
   else if(stockFilter==='black') data=data.filter(s=>s.color==='블랙');
 
-  const list=document.getElementById('stockList');
-  if(!data.length){list.innerHTML=`<div class="empty"><div class="ei">📦</div><p>기록이 없어요!</p></div>`;return;}
-
-  const TYPE_INFO={
-    in:{label:'▲ 입고',cls:'ic-in',sign:'+',qty:'plus'},
-    'out-direct':{label:'🤝 직거래 출고',cls:'ic-direct',sign:'-',qty:'minus'},
-    'out-myship':{label:'📦 내재고택배 출고',cls:'ic-myship',sign:'-',qty:'minus'},
-    'out-ddl':{label:'🏭 둘둘랙 출고',cls:'ic-ddl',sign:'',qty:''},
-    move:{label:'🔄 맡긴→내손 이동',cls:'ic-move',sign:'',qty:'orange'}
-  };
-
-  list.innerHTML=data.map(s=>{
-    const ti=TYPE_INFO[s.type]||TYPE_INFO['out-direct'];
-    const[,mo,d]=s.date.split('-');
-    const colorChip=s.color==='블랙'?'⬛':'⬜';
-    return `<div class="io-item ${s.type}${s.auto?' auto':''}">
-      <div style="position:absolute;top:7px;right:7px"><button class="del-btn" onclick="delStock(${s.id})">✕</button></div>
-      <div class="io-top">
-        <div>
-          <div class="io-meta" style="margin-bottom:3px">
-            <span>${mo}월 ${d}일</span>
-            <span class="io-chip ${ti.cls}">${ti.label}</span>
-            <span>${colorChip} ${s.color}</span>
-          </div>
-          <div class="io-info">${s.memo||ti.label}</div>
-        </div>
-        <div class="io-qty ${ti.qty}">${ti.sign}${s.qty}개</div>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-document.getElementById('stockModal').addEventListener('click',function(e){if(e.target===this)closeStockModal();});
-
-// ── 유틸 ──
-function todayStr(){return new Date().toISOString().split('T')[0];}
-function fW(n){return Math.abs(n)>=10000?(n/10000).toFixed(1)+'만원':n.toLocaleString()+'원';}
-function fS(n){return (n/10000).toFixed(1);}
-
-renderPhones();
-</script>
-</body>
-</html>
+  const list=document.ge
