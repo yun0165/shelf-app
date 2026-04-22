@@ -592,7 +592,9 @@ function pickPhone(i) {
 function goSelect() {
   document.getElementById('phoneScreen').style.display='flex';
   document.getElementById('mainApp').style.display='none';
-  function exportExcel() {
+}
+
+function exportExcel() {
   var csv = '\uFEFF' + '폰,판매일,색상,거래방법,수량,원가(원),배송비(원),판매가총액(원),수익(원),구매자이름,연락처,주소,택배사,운송장번호,메모\n';
   var TRADE = {direct:'직거래', myship:'내재고택배', ddl:'둘둘랙택배'};
   var pnames = JSON.parse(localStorage.getItem('pNames') || 'null') || ['폰 1','폰 2','폰 3','폰 4','폰 5','폰 6','폰 7','폰 8'];
@@ -692,7 +694,6 @@ function kakaoBackup() {
 }
 
 renderPhones();
-}
 
 function openEdit(e,i){e.stopPropagation();editIdx=i;document.getElementById('editInput').value=names[i];document.getElementById('editModal').classList.add('open');setTimeout(()=>document.getElementById('editInput').focus(),80);}
 function closeEdit(){document.getElementById('editModal').classList.remove('open');}
