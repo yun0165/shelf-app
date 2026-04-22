@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🗄️ 철제선반 관리앱</title>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --rust:#C0392B; --rust-dark:#922B21;
+  --iron:#2C3E50; --iron-light:#34495E;
+  --steel:#7F8C8D; --cream:#FDF6EC;
+  --green:#27AE60; --blue:#2980B9;
+  --purple:#8E44AD; --orange:#E67E22;
+  --light-bg:#F5F0E8;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--light-bg);
+  background-image:repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(0,0,0,0.04) 39px,rgba(0,0,0,0.04) 40px),
+  repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(0,0,0,0.04) 39px,rgba(0,0,0,0.04) 40px);
+  min-height:100vh;padding:0 0 80px;}
+
+/* ── 폰선택 ── */
+#phoneScreen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 16px;}
+.ph-header{text-align:center;margin-bottom:20px;}
+.badge{display:inline-block;background:var(--iron);color:var(--cream);font-family:'Black Han Sans',sans-serif;font-size:11px;letter-spacing:3px;padding:4px 16px;margin-bottom:8px;clip-path:polygon(8px 0%,calc(100% - 8px) 0%,100% 50%,calc(100% - 8px) 100%,8px 100%,0% 50%);}
+.ph-header h1{font-family:'Black Han Sans',sans-serif;font-size:24px;color:var(--iron);}
+.ph-header h1 span{color:var(--rust);}
+.ph-header p{font-size:12px;color:var(--steel);margin-top:5px;}
+.total-summary{width:100%;max-width:380px;background:var(--iron);border-radius:4px;padding:14px;margin-bottom:14px;box-shadow:4px 4px 0 rgba(0,0,0,0.15);}
+.total-summary-title{font-family:'Black Han Sans',sans-serif;font-size:11px;color:rgba(255,255,255,0.6);letter-spacing:2px;margin-bottom:10px;}
+.total-summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.ts-box{text-align:center;}
+.ts-val{font-family:'Black Han Sans',sans-serif;font-size:18px;color:white;}
+.ts-val.green{color:#2ECC71;} .ts-val.red{color:#E74C3C;}
+.ts-lbl{font-size:10px;color:rgba(255,255,255,0.5);margin-top:2px;}
+.phone-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;max-width:380px;margin-bottom:14px;}
+.phone-btn{background:white;border:2px solid #D0C8B8;border-radius:4px;padding:13px 12px 11px;cursor:pointer;text-align:center;box-shadow:3px 3px 0 rgba(0,0,0,0.07);transition:all 0.15s;position:relative;}
+.phone-btn:active{transform:scale(0.97);}
+.phone-btn .pi{font-size:24px;margin-bottom:4px;}
+.phone-btn .pn{font-family:'Black Han Sans',sans-serif;font-size:13px;color:var(--iron);}
+.phone-btn .pc{font-size:10px;color:var(--steel);margin-top:2px;}
+.phone-btn .ps{font-size:11px;color:var(--green);font-weight:700;margin-top:2px;}
+.edit-pn-btn{position:absolute;top:5px;right:5px;font-size:11px;opacity:0.4;cursor:pointer;background:none;border:none;padding:2px;}
+
+/* ── 메인앱 ── */
+#mainApp{display:none;}
+.topbar{display:flex;align-items:center;justify-content:space-between;background:var(--iron);color:white;padding:0 16px;position:sticky;top:0;z-index:100;}
+.cur-phone{font-family:'Black Han Sans',sans-serif;font-size:14px;letter-spacing:1px;display:flex;align-items:center;gap:6px;padding:10px 0;}
+.chg-btn{font-size:11px;background:rgba(255,255,255,0.2);border:none;color:white;padding:4px 10px;border-radius:2px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;font-weight:700;}
+
+/* 탭 */
+.main-tabs{display:flex;background:var(--iron-light);overflow-x:auto;}
+.mtab{flex:1;min-width:60px;padding:10px 4px;text-align:center;font-size:11px;font-weight:700;color:rgba(255,255,255,0.5);cursor:pointer;border-bottom:3px solid transparent;transition:all 0.15s;white-space:nowrap;}
+.mtab.active{color:white;border-bottom-color:#F39C12;}
+
+.tab-screen{display:none;padding:14px 12px;}
+.tab-screen.show{display:block;}
+
+/* 공통 */
+.app-hd{text-align:center;margin-bottom:14px;}
+.app-hd h1{font-family:'Black Han Sans',sans-serif;font-size:20px;color:var(--iron);}
+.app-hd h1 span{color:var(--rust);}
+.app-hd p{font-size:11px;color:var(--steel);margin-top:3px;}
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:13px;}
+.sbox{background:white;border-radius:2px;box-shadow:3px 3px 0 rgba(0,0,0,0.07);padding:10px 7px;text-align:center;border-top:3px solid var(--iron);}
+.sbox.sr{border-top-color:var(--rust);} .sbox.sg{border-top-color:var(--green);} .sbox.sb{border-top-color:var(--blue);}
+.sv{font-family:'Black Han Sans',sans-serif;font-size:16px;color:var(--iron);}
+.sbox.sr .sv{color:var(--rust);} .sbox.sg .sv{color:var(--green);} .sbox.sb .sv{color:var(--blue);}
+.sl{font-size:10px;color:var(--steel);margin-top:3px;}
+.card{background:white;border-radius:2px;border-left:4px solid var(--rust);box-shadow:4px 4px 0 rgba(0,0,0,0.08);padding:14px;margin-bottom:12px;}
+.card-title{font-family:'Black Han Sans',sans-serif;font-size:13px;color:var(--rust);letter-spacing:1px;margin-bottom:10px;}
+.editing-banner{display:none;background:#FFF3CD;border:1px solid #F0AD4E;border-radius:2px;padding:7px 11px;margin-bottom:9px;font-size:12px;font-weight:700;color:#856404;justify-content:space-between;align-items:center;}
+.editing-banner.show{display:flex;}
+.cancel-edit-btn{background:none;border:1px solid #F0AD4E;border-radius:2px;font-size:11px;padding:2px 8px;cursor:pointer;color:#856404;font-family:'Noto Sans KR',sans-serif;font-weight:700;}
+.fg label{display:block;font-size:11px;font-weight:700;color:var(--steel);margin-bottom:4px;}
+.fg input,.fg select,.fg textarea{width:100%;border:2px solid #E8E0D0;border-radius:2px;padding:9px 11px;font-family:'Noto Sans KR',sans-serif;font-size:14px;color:var(--iron);background:var(--cream);transition:border-color 0.2s;outline:none;-webkit-appearance:none;}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--rust);background:white;}
+.fg textarea{resize:vertical;min-height:52px;}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:9px;}
+.trade-toggle{display:flex;border:2px solid #E8E0D0;border-radius:2px;overflow:hidden;margin-bottom:11px;}
+.topt{flex:1;padding:9px 4px;text-align:center;font-size:12px;font-weight:700;cursor:pointer;background:var(--cream);color:var(--steel);transition:all 0.15s;border:none;font-family:'Noto Sans KR',sans-serif;}
+.topt.on-d{background:var(--iron);color:white;}
+.topt.on-p{background:var(--blue);color:white;}
+.topt.on-h{background:var(--orange);color:white;}
+#delSec{display:none;} #delSec.show{display:block;}
+.del-card{background:#EBF5FB;border:1px solid #AED6F1;border-radius:2px;padding:12px;margin-bottom:10px;}
+.del-card-title{font-family:'Black Han Sans',sans-serif;font-size:12px;color:var(--blue);letter-spacing:1px;margin-bottom:9px;}
+.price-row{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;align-items:end;gap:5px;margin-bottom:9px;}
+.csym{font-size:17px;font-weight:700;color:var(--steel);padding-bottom:9px;text-align:center;}
+.pbox{border-radius:2px;padding:9px 11px;font-size:14px;font-weight:700;text-align:center;background:var(--iron);color:white;margin-bottom:11px;}
+.pbox.pos{background:var(--green);} .pbox.neg{background:var(--rust);}
+.btn-sub{width:100%;background:var(--rust);color:white;border:none;padding:13px;font-family:'Black Han Sans',sans-serif;font-size:15px;letter-spacing:2px;cursor:pointer;clip-path:polygon(12px 0%,calc(100% - 12px) 0%,100% 50%,calc(100% - 12px) 100%,12px 100%,0% 50%);transition:all 0.15s;}
+.btn-sub:active{transform:scale(0.98);background:var(--rust-dark);}
+.filter-row{display:flex;gap:5px;margin-bottom:9px;overflow-x:auto;padding-bottom:2px;}
+.tab{flex-shrink:0;padding:5px 10px;font-size:12px;font-weight:700;border:2px solid var(--iron);background:white;color:var(--iron);border-radius:2px;cursor:pointer;transition:all 0.15s;}
+.tab.active{background:var(--iron);color:white;}
+.rec{background:white;border-radius:2px;box-shadow:3px 3px 0 rgba(0,0,0,0.06);padding:12px;margin-bottom:9px;border-left:4px solid var(--iron-light);position:relative;animation:sIn 0.22s ease;}
+.rec.dr{border-left-color:var(--blue);} .rec.hr{border-left-color:var(--orange);}
+@keyframes sIn{from{opacity:0;transform:translateY(-5px);}to{opacity:1;transform:translateY(0);}}
+.rec-btns{position:absolute;top:7px;right:7px;display:flex;gap:4px;}
+.edit-btn,.del-btn{background:none;border:none;font-size:13px;cursor:pointer;opacity:0.4;transition:opacity 0.2s;padding:2px;}
+.edit-btn:hover,.del-btn:hover{opacity:1;}
+.rec-hd{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px;}
+.rec-meta{font-size:11px;color:var(--steel);display:flex;gap:5px;align-items:center;flex-wrap:wrap;}
+.chip{font-size:10px;font-weight:700;padding:1px 6px;border-radius:2px;}
+.chip-d{background:var(--blue);color:white;} .chip-r{background:var(--iron);color:white;} .chip-h{background:var(--orange);color:white;}
+.rec-name{font-weight:700;font-size:14px;color:var(--iron);margin-top:2px;}
+.rec-profit{font-family:'Black Han Sans',sans-serif;font-size:17px;color:var(--green);text-align:right;white-space:nowrap;}
+.rec-profit.loss{color:var(--rust);}
+.rec-details{display:flex;gap:5px;font-size:11px;color:var(--steel);flex-wrap:wrap;margin-bottom:4px;}
+.rec-details span{background:var(--light-bg);padding:2px 6px;border-radius:2px;}
+.buyer-box{background:#EBF5FB;border:1px solid #AED6F1;border-radius:2px;padding:7px 9px;font-size:12px;color:var(--iron);margin-top:4px;}
+.br{display:flex;gap:5px;margin-bottom:2px;align-items:baseline;}
+.br:last-child{margin-bottom:0;}
+.bl{color:var(--steel);font-weight:700;min-width:40px;font-size:11px;}
+.tc{display:inline-block;background:var(--blue);color:white;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:3px;}
+.rec-memo{font-size:11px;color:var(--steel);margin-top:5px;font-style:italic;border-top:1px dashed #E0D8CC;padding-top:4px;}
+.empty{text-align:center;padding:32px 20px;color:var(--steel);}
+.empty .ei{font-size:38px;margin-bottom:9px;}
+.empty p{font-size:13px;}
+.mo-div{font-family:'Black Han Sans',sans-serif;font-size:11px;color:var(--steel);letter-spacing:2px;text-align:center;margin:12px 0 7px;display:flex;align-items:center;gap:7px;}
+.mo-div::before,.mo-div::after{content:'';flex:1;height:1px;background:#D0C8B8;}
+.sec-title{font-family:'Black Han Sans',sans-serif;font-size:13px;color:var(--iron);letter-spacing:1px;margin-bottom:9px;}
+
+/* ── 약속 메모 ── */
+.appt-urgent{background:#FFF3CD;border:2px solid #F39C12;border-radius:4px;padding:12px;margin-bottom:12px;}
+.appt-urgent-title{font-family:'Black Han Sans',sans-serif;font-size:12px;color:#856404;letter-spacing:1px;margin-bottom:8px;}
+.appt-item{background:white;border-radius:2px;box-shadow:2px 2px 0 rgba(0,0,0,0.06);padding:11px;margin-bottom:8px;border-left:4px solid var(--orange);position:relative;animation:sIn 0.2s ease;}
+.appt-item.done{opacity:0.5;border-left-color:var(--steel);}
+.appt-item.overdue{border-left-color:var(--rust);background:#FFF5F5;}
+.appt-item.today-item{border-left-color:#F39C12;}
+.appt-item.tmr-item{border-left-color:var(--blue);}
+.appt-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px;}
+.appt-time{font-family:'Black Han Sans',sans-serif;font-size:13px;color:var(--iron);}
+.appt-time .adate{font-size:11px;color:var(--steel);font-weight:400;margin-right:4px;}
+.appt-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;}
+.ab-today{background:#FFF3CD;color:#856404;}
+.ab-tmr{background:#CCE5FF;color:#004085;}
+.ab-done{background:#E2E3E5;color:#383D41;}
+.ab-over{background:#FFEBEE;color:#C62828;}
+.ab-future{background:#E8F5E9;color:#1B5E20;}
+.appt-content{font-size:14px;font-weight:700;color:var(--iron);margin-bottom:4px;}
+.appt-memo{font-size:12px;color:var(--steel);font-style:italic;}
+.appt-btns{display:flex;gap:4px;margin-top:7px;}
+.appt-btn{flex:1;padding:5px;border:none;border-radius:2px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;}
+.ab-done-btn{background:#E8F5E9;color:var(--green);}
+.ab-edit-btn{background:var(--light-bg);color:var(--iron);}
+.ab-del-btn{background:#FFEBEE;color:var(--rust);}
+.appt-type-badge{font-size:10px;padding:1px 7px;border-radius:2px;font-weight:700;margin-left:4px;}
+.at-pickup{background:#E8F5E9;color:#1B5E20;}
+.at-delivery{background:#E3F2FD;color:#0D47A1;}
+.at-call{background:#F3E5F5;color:#4A148C;}
+.at-other{background:#E8E8E8;color:#333;}
+
+/* ── 재고관리 ── */
+.stock-summary{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.stock-box{background:white;border-radius:4px;box-shadow:3px 3px 0 rgba(0,0,0,0.08);padding:14px;text-align:center;border-top:4px solid var(--iron);}
+.stock-box.white-box{border-top-color:#BDC3C7;}
+.stock-box.black-box{border-top-color:#2C3E50;}
+.stock-color{font-size:22px;margin-bottom:4px;}
+.stock-name{font-family:'Black Han Sans',sans-serif;font-size:13px;color:var(--steel);margin-bottom:8px;}
+.stock-num{font-family:'Black Han Sans',sans-serif;font-size:28px;color:var(--iron);}
+.stock-sub{font-size:10px;color:var(--steel);margin-top:4px;}
+.stock-sub span{font-weight:700;color:var(--blue);}
+.stock-mini{font-size:11px;color:var(--steel);margin-top:6px;display:flex;justify-content:center;gap:10px;}
+.stock-mini .sm-in{color:var(--green);font-weight:700;}
+.stock-mini .sm-out{color:var(--rust);font-weight:700;}
+
+.stock-total-bar{background:var(--iron);border-radius:4px;padding:12px;margin-bottom:14px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center;}
+.stb-val{font-family:'Black Han Sans',sans-serif;font-size:16px;color:white;}
+.stb-val.green{color:#2ECC71;} .stb-val.red{color:#E74C3C;} .stb-val.orange{color:#F39C12;}
+.stb-lbl{font-size:9px;color:rgba(255,255,255,0.5);margin-top:2px;}
+
+.io-toggle{display:flex;gap:6px;margin-bottom:10px;}
+.io-btn{flex:1;padding:10px;border:2px solid #E8E0D0;background:white;border-radius:2px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;color:var(--steel);transition:all 0.15s;}
+.io-btn.on-in{background:var(--green);color:white;border-color:var(--green);}
+.io-btn.on-out{background:var(--rust);color:white;border-color:var(--rust);}
+.io-btn.on-move{background:var(--blue);color:white;border-color:var(--blue);}
+
+.io-item{background:white;border-radius:2px;box-shadow:2px 2px 0 rgba(0,0,0,0.06);padding:11px;margin-bottom:8px;position:relative;border-left:4px solid var(--steel);animation:sIn 0.2s ease;}
+.io-item.in{border-left-color:var(--green);}
+.io-item.out-direct{border-left-color:var(--iron);}
+.io-item.out-myship{border-left-color:var(--blue);}
+.io-item.out-ddl{border-left-color:var(--purple);}
+.io-item.move{border-left-color:var(--orange);}
+.io-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+.io-info{font-size:13px;font-weight:700;color:var(--iron);}
+.io-qty{font-family:'Black Han Sans',sans-serif;font-size:16px;}
+.io-qty.plus{color:var(--green);} .io-qty.minus{color:var(--rust);}
+.io-meta{display:flex;gap:5px;flex-wrap:wrap;font-size:11px;color:var(--steel);}
+.io-meta span{background:var(--light-bg);padding:1px 6px;border-radius:2px;}
+.io-chip{font-size:10px;font-weight:700;padding:2px 7px;border-radius:2px;}
+.ic-in{background:#E8F5E9;color:#1B5E20;}
+.ic-direct{background:#ECF0F1;color:var(--iron);}
+.ic-myship{background:#E3F2FD;color:#0D47A1;}
+.ic-ddl{background:#F3E5F5;color:#4A148C;}
+.ic-move{background:#FFF3E0;color:#E65100;}
+
+/* 모달 */
+.mwrap{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:999;align-items:flex-end;justify-content:center;}
+.mwrap.open{display:flex;}
+.modal{background:white;border-radius:12px 12px 0 0;padding:20px 16px 40px;width:100%;max-width:500px;max-height:88vh;overflow-y:auto;animation:slideUp 0.25s ease;}
+@keyframes slideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+.modal-title{font-family:'Black Han Sans',sans-serif;font-size:15px;color:var(--iron);margin-bottom:14px;letter-spacing:1px;}
+.mfg{margin-bottom:11px;}
+.mfg label{display:block;font-size:11px;font-weight:700;color:var(--steel);margin-bottom:4px;}
+.mfg input,.mfg select,.mfg textarea{width:100%;border:2px solid #E8E0D0;border-radius:2px;padding:9px 11px;font-size:14px;font-family:'Noto Sans KR',sans-serif;color:var(--iron);background:var(--cream);outline:none;transition:border-color 0.2s;-webkit-appearance:none;}
+.mfg input:focus,.mfg select:focus,.mfg textarea:focus{border-color:var(--rust);background:white;}
+.mfg textarea{resize:vertical;min-height:65px;}
+.mgrid2{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+.mbtns{display:flex;gap:8px;margin-top:14px;}
+.mbtns button{flex:1;padding:12px;border:none;border-radius:2px;font-family:'Noto Sans KR',sans-serif;font-size:14px;font-weight:700;cursor:pointer;}
+.bok{background:var(--iron);color:white;} .bno{background:#EEE;color:var(--iron);}
+
+/* 이름모달 */
+.nmwrap{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:999;align-items:center;justify-content:center;padding:20px;}
+.nmwrap.open{display:flex;}
+.nmbox{background:white;border-radius:4px;padding:20px;width:100%;max-width:280px;box-shadow:0 8px 32px rgba(0,0,0,0.2);}
+.nmbox h3{font-family:'Black Han Sans',sans-serif;font-size:15px;color:var(--iron);margin-bottom:11px;}
+.nmbox input{width:100%;border:2px solid #E8E0D0;border-radius:2px;padding:9px 11px;font-size:15px;font-family:'Noto Sans KR',sans-serif;outline:none;margin-bottom:11px;color:var(--iron);}
+.nmbox input:focus{border-color:var(--rust);}
+</style>
+</head>
+<body>
+
+<!-- 폰 선택 -->
+<div id="phoneScreen">
+  <div class="ph-header">
+    <div class="badge">DAANGN MARKET</div>
+    <h1>🗄️ 철제<span>선반</span> 관리앱</h1>
+    <p>사용 중인 폰을 선택하세요</p>
+  </div>
+  <div class="total-summary">
+    <div class="total-summary-title">📊 전체 폰 합산</div>
+    <div class="total-summary-grid">
+      <div class="ts-box"><div class="ts-val red" id="tsQty">0개</div><div class="ts-lbl">총 판매</div></div>
+      <div class="ts-box"><div class="ts-val" id="tsRev">0</div><div class="ts-lbl">매출(만원)</div></div>
+      <div class="ts-box"><div class="ts-val green" id="tsPro">0</div><div class="ts-lbl">수익(만원)</div></div>
+    </div>
+  </div>
+  <button onclick="exportExcel()" style="width:100%;max-width:380px;background:#27AE60;color:white;border:none;padding:12px;border-radius:4px;font-family:'Black Han Sans',sans-serif;font-size:13px;letter-spacing:1px;cursor:pointer;margin-bottom:10px;">📊 전체 데이터 엑셀 내보내기</button>
+  <div class="phone-grid" id="phoneGrid"></div>
+  <p style="font-size:11px;color:var(--steel);text-align:center">✏️ 버튼으로 폰 이름 수정 가능</p>
+</div>
+
+<!-- 메인앱 -->
+<div id="mainApp">
+  <div class="topbar">
+    <div class="cur-phone"><span id="tbIcon">📱</span><span id="tbName">폰 1</span></div>
+    <button class="chg-btn" onclick="goSelect()">← 폰 선택</button>
+  </div>
+  <div class="main-tabs">
+    <div class="mtab active" onclick="showMainTab('sales',this)">📋 판매일지</div>
+    <div class="mtab" onclick="showMainTab('appt',this)">📅 약속메모</div>
+    <div class="mtab" onclick="showMainTab('stock',this)">📦 재고관리</div>
+  </div>
+
+  <!-- ══ 판매일지 탭 ══ -->
+  <div class="tab-screen show" id="tab-sales">
+    <div class="app-hd">
+      <h1>🗄️ 철제<span>선반</span> 판매일지</h1>
+      <p>전주 → 제주 당근마켓 판매 기록</p>
+    </div>
+    <div class="stats-grid">
+      <div class="sbox sr"><div class="sv" id="stQty">0</div><div class="sl">총 판매수</div></div>
+      <div class="sbox"><div class="sv" id="stRev">0</div><div class="sl">매출(만원)</div></div>
+      <div class="sbox sg"><div class="sv" id="stPro">0</div><div class="sl">수익(만원)</div></div>
+    </div>
+    <!-- 거래유형별 통계 -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:13px;">
+      <div class="sbox"><div class="sv" id="stDirect" style="font-size:14px">0</div><div class="sl">🤝직거래</div></div>
+      <div class="sbox sb"><div class="sv" id="stMyship" style="font-size:14px">0</div><div class="sl">📦내재고택배</div></div>
+      <div class="sbox" style="border-top-color:var(--purple)"><div class="sv" id="stDdl" style="font-size:14px;color:var(--purple)">0</div><div class="sl">🏭둘둘랙택배</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title" id="formTitle">✏️ 판매 기록 추가</div>
+      <div class="editing-banner" id="editBanner">
+        <span>🔄 수정 중...</span>
+        <button class="cancel-edit-btn" onclick="cancelEdit()">취소</button>
+      </div>
+      <div class="fgrid">
+        <div class="fg"><label>📅 판매일</label><input type="date" id="fDate"></div>
+        <div class="fg"><label>📦 수량</label><input type="number" id="fQty" value="1" min="1" oninput="calcP()"></div>
+      </div>
+      <div class="fg" style="margin-bottom:9px">
+        <label>🗄️ 색상</label>
+        <select id="fColor">
+          <option value="화이트">⬜ 화이트</option>
+          <option value="블랙">⬛ 블랙</option>
+        </select>
+      </div>
+      <label style="font-size:11px;font-weight:700;color:var(--steel);display:block;margin-bottom:5px">거래 방법</label>
+      <div class="trade-toggle">
+        <button class="topt on-d" id="optDir" onclick="setTrade('direct')">🤝 직거래</button>
+        <button class="topt" id="optDel" onclick="setTrade('myship')">📦 내재고택배</button>
+        <button class="topt" id="optDdl" onclick="setTrade('ddl')">🏭 둘둘랙</button>
+      </div>
+      <div id="delSec">
+        <div class="del-card">
+          <div class="del-card-title">📦 택배 구매자 정보</div>
+          <div class="fgrid">
+            <div class="fg"><label>👤 구매자</label><input type="text" id="bName" placeholder="홍길동"></div>
+            <div class="fg"><label>📞 연락처</label><input type="tel" id="bPhone" placeholder="010-0000-0000"></div>
+          </div>
+          <div class="fg" style="margin-bottom:9px"><label>🏠 배송 주소</label><input type="text" id="bAddr" placeholder="예: 제주시 연동 123-4"></div>
+          <div class="fgrid" style="margin-bottom:0">
+            <div class="fg">
+              <label>🚚 택배사</label>
+              <select id="bCourier">
+                <option value="">선택</option>
+                <option>CJ대한통운</option><option>로젠택배</option>
+                <option>한진택배</option><option>우체국택배</option>
+                <option>롯데택배</option><option>기타</option>
+              </select>
+            </div>
+            <div class="fg"><label>🔢 운송장번호</label><input type="text" id="bTracking" placeholder="번호 입력"></div>
+          </div>
+        </div>
+      </div>
+      <div class="price-row">
+        <div class="fg"><label>💸 원가(원)</label><input type="number" id="fCost" placeholder="0" oninput="calcP()"></div>
+        <div class="csym">−</div>
+        <div class="fg"><label>🚛 배송비(원)</label><input type="number" id="fShip" placeholder="0" oninput="calcP()"></div>
+        <div class="csym">+</div>
+        <div class="fg"><label>💰 판매가 <small style='color:#2980B9'>총액(원)</small></label><input type="number" id="fSale" placeholder="0" oninput="calcP()"></div>
+      </div>
+      <div style="font-size:11px;font-weight:700;color:var(--steel);margin-bottom:4px">📊 예상 수익</div>
+      <div class="pbox" id="profitBox">입력해주세요</div>
+      <div class="fg" style="margin-bottom:12px">
+        <label>📝 메모</label>
+        <textarea id="fMemo" placeholder="흥정, 상태, 특이사항..."></textarea>
+      </div>
+      <button class="btn-sub" id="submitBtn" onclick="addRec()">▶ 기록 저장</button>
+    </div>
+
+    <div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:9px">
+        <div class="sec-title">📋 판매 내역</div>
+        <span style="font-size:11px;color:var(--steel)" id="recCount">0건</span>
+      </div>
+      <div class="filter-row">
+        <div class="tab active" onclick="setFilter('all',this)">전체</div>
+        <div class="tab" onclick="setFilter('today',this)">오늘</div>
+        <div class="tab" onclick="setFilter('week',this)">이번주</div>
+        <div class="tab" onclick="setFilter('month',this)">이번달</div>
+        <div class="tab" onclick="setFilter('direct',this)">🤝직거래</div>
+        <div class="tab" onclick="setFilter('myship',this)">📦내재고택배</div>
+        <div class="tab" onclick="setFilter('ddl',this)">🏭둘둘랙</div>
+      </div>
+      <div id="recList"></div>
+    </div>
+  </div>
+
+  <!-- ══ 약속메모 탭 ══ -->
+  <div class="tab-screen" id="tab-appt">
+    <div class="app-hd">
+      <h1>📅 약속 <span>메모</span></h1>
+      <p>거래 약속, 연락, 할 일 관리</p>
+    </div>
+
+    <!-- 오늘/내일 긴급 알림 -->
+    <div id="urgentAppts"></div>
+
+    <button onclick="openApptModal()" style="width:100%;background:var(--iron);color:white;border:none;padding:13px;border-radius:2px;font-family:'Black Han Sans',sans-serif;font-size:14px;letter-spacing:2px;cursor:pointer;margin-bottom:13px;">
+      ＋ 약속 추가
+    </button>
+
+    <div class="filter-row">
+      <div class="tab active" onclick="setApptFilter('upcoming',this)">📅 예정</div>
+      <div class="tab" onclick="setApptFilter('today',this)">오늘</div>
+      <div class="tab" onclick="setApptFilter('tomorrow',this)">내일</div>
+      <div class="tab" onclick="setApptFilter('all',this)">전체</div>
+      <div class="tab" onclick="setApptFilter('done',this)">✅ 완료</div>
+    </div>
+    <div id="apptList"></div>
+  </div>
+
+  <!-- ══ 재고관리 탭 ══ -->
+  <div class="tab-screen" id="tab-stock">
+    <div class="app-hd">
+      <h1>📦 재고 <span>관리</span></h1>
+      <p>5단 철제선반 입출고 현황</p>
+    </div>
+
+    <!-- 재고 현황 -->
+    <div class="stock-total-bar">
+      <div><div class="stb-val" id="sk-total">0</div><div class="stb-lbl">총 보유</div></div>
+      <div><div class="stb-val green" id="sk-myhand">0</div><div class="stb-lbl">내 손에</div></div>
+      <div><div class="stb-val orange" id="sk-stored">0</div><div class="stb-lbl">맡긴 곳</div></div>
+      <div><div class="stb-val red" id="sk-sold">0</div><div class="stb-lbl">오늘출고</div></div>
+    </div>
+
+    <div class="stock-summary">
+      <div class="stock-box white-box">
+        <div class="stock-color">⬜</div>
+        <div class="stock-name">화이트</div>
+        <div class="stock-num" id="sk-white">0</div>
+        <div class="stock-sub">내손: <span id="sk-white-hand">0</span> / 맡긴: <span id="sk-white-stored">0</span></div>
+        <div class="stock-mini">
+          <span class="sm-in">▲ 입고 <span id="sk-white-in">0</span></span>
+          <span class="sm-out">▼ 출고 <span id="sk-white-out">0</span></span>
+        </div>
+      </div>
+      <div class="stock-box black-box">
+        <div class="stock-color">⬛</div>
+        <div class="stock-name">블랙</div>
+        <div class="stock-num" id="sk-black">0</div>
+        <div class="stock-sub">내손: <span id="sk-black-hand">0</span> / 맡긴: <span id="sk-black-stored">0</span></div>
+        <div class="stock-mini">
+          <span class="sm-in">▲ 입고 <span id="sk-black-in">0</span></span>
+          <span class="sm-out">▼ 출고 <span id="sk-black-out">0</span></span>
+        </div>
+      </div>
+    </div>
+
+    <button onclick="openStockModal()" style="width:100%;background:var(--iron);color:white;border:none;padding:13px;border-radius:2px;font-family:'Black Han Sans',sans-serif;font-size:14px;letter-spacing:2px;cursor:pointer;margin-bottom:13px;">
+      ＋ 입출고 기록
+    </button>
+
+    <div class="filter-row">
+      <div class="tab active" onclick="setStockFilter('all',this)">전체</div>
+      <div class="tab" onclick="setStockFilter('in',this)">▲ 입고</div>
+      <div class="tab" onclick="setStockFilter('out',this)">▼ 출고</div>
+      <div class="tab" onclick="setStockFilter('today',this)">오늘</div>
+      <div class="tab" onclick="setStockFilter('white',this)">⬜화이트</div>
+      <div class="tab" onclick="setStockFilter('black',this)">⬛블랙</div>
+    </div>
+    <div id="stockList"></div>
+  </div>
+</div>
+
+<!-- 약속 모달 -->
+<div class="mwrap" id="apptModal">
+  <div class="modal">
+    <div class="modal-title" id="apptModalTitle">📅 약속 추가</div>
+    <div class="mgrid2">
+      <div class="mfg"><label>📅 날짜</label><input type="date" id="aDate"></div>
+      <div class="mfg"><label>⏰ 시간</label><input type="time" id="aTime"></div>
+    </div>
+    <div class="mfg">
+      <label>🏷️ 유형</label>
+      <select id="aType">
+        <option value="pickup">🤝 직거래 픽업</option>
+        <option value="delivery">📦 택배 발송</option>
+        <option value="call">📞 연락/전화</option>
+        <option value="stock">📦 재고 가져오기</option>
+        <option value="other">📌 기타</option>
+      </select>
+    </div>
+    <div class="mfg"><label>📝 내용 *</label><input type="text" id="aContent" placeholder="예: 홍길동 3시 픽업, 화이트 2개"></div>
+    <div class="mgrid2">
+      <div class="mfg">
+        <label>🗄️ 색상</label>
+        <select id="aColor">
+          <option value="">무관</option>
+          <option value="화이트">⬜ 화이트</option>
+          <option value="블랙">⬛ 블랙</option>
+        </select>
+      </div>
+      <div class="mfg"><label>📦 수량</label><input type="number" id="aQty" placeholder="개수 (선택)"></div>
+    </div>
+    <div class="mfg"><label>📞 연락처</label><input type="tel" id="aPhone" placeholder="010-0000-0000 (선택)"></div>
+    <div class="mfg"><label>💬 메모</label><textarea id="aMemo" placeholder="추가 메모..."></textarea></div>
+    <div class="mbtns">
+      <button class="bno" onclick="closeApptModal()">취소</button>
+      <button class="bok" onclick="saveAppt()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 재고 모달 -->
+<div class="mwrap" id="stockModal">
+  <div class="modal">
+    <div class="modal-title">📦 입출고 기록</div>
+    <div class="fgrid" style="gap:6px;margin-bottom:10px">
+      <button class="io-btn on-in" id="ioIn" onclick="setIOType('in')">▲ 입고</button>
+      <button class="io-btn" id="ioOut" onclick="setIOType('out-direct')">🤝 직거래 출고</button>
+    </div>
+    <div class="fgrid" style="gap:6px;margin-bottom:12px">
+      <button class="io-btn" id="ioMyship" onclick="setIOType('out-myship')">📦 내재고택배</button>
+      <button class="io-btn" id="ioDdl" onclick="setIOType('out-ddl')">🏭 둘둘랙출고</button>
+    </div>
+    <!-- 맡긴재고 이동 -->
+    <button class="io-btn" id="ioMove" onclick="setIOType('move')" style="width:100%;margin-bottom:12px">🔄 맡긴재고 → 내손으로 가져오기</button>
+
+    <div class="mgrid2">
+      <div class="mfg"><label>📅 날짜</label><input type="date" id="ioDate"></div>
+      <div class="mfg"><label>📦 수량</label><input type="number" id="ioQty" placeholder="0" min="1"></div>
+    </div>
+    <div class="mfg">
+      <label>🗄️ 색상</label>
+      <select id="ioColor">
+        <option value="화이트">⬜ 화이트</option>
+        <option value="블랙">⬛ 블랙</option>
+      </select>
+    </div>
+    <div class="mfg" id="ioStoredNote" style="display:none">
+      <div style="background:#FFF3E0;border-radius:2px;padding:8px 10px;font-size:12px;color:#E65100">
+        💡 맡긴 재고에서 내 손으로 이동합니다
+      </div>
+    </div>
+    <div class="mfg"><label>📝 메모</label><textarea id="ioMemo" placeholder="예: 전주 창고에서 입고, 택배 발송 등..."></textarea></div>
+    <div class="mbtns">
+      <button class="bno" onclick="closeStockModal()">취소</button>
+      <button class="bok" onclick="saveStock()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 이름 수정 모달 -->
+<div class="nmwrap" id="editModal">
+  <div class="nmbox">
+    <h3>📱 폰 이름 수정</h3>
+    <input type="text" id="editInput" maxlength="10" placeholder="이름 입력">
+    <div class="mbtns">
+      <button class="bno" onclick="closeEdit()">취소</button>
+      <button class="bok" onclick="saveName()">저장</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const ICONS=['📱','📲','🔵','🟠','🟢','🟣','🟤','⚫'];
+const DNAMES=['폰 1','폰 2','폰 3','폰 4','폰 5','폰 6','폰 7','폰 8'];
+let names=JSON.parse(localStorage.getItem('pNames')||'null')||[...DNAMES];
+let cur=null, filter='all', trade='direct', editIdx=null, editingId=null;
+let apptFilter='upcoming', editingApptId=null;
+let stockFilter='all', ioType='in';
+
+// ── 로컬스토리지 ──
+function getRecs()        { return JSON.parse(localStorage.getItem('recs_'+cur)||'[]'); }
+function saveRecs(r)      { localStorage.setItem('recs_'+cur,JSON.stringify(r)); }
+function getAppts()       { return JSON.parse(localStorage.getItem('appts')||'[]'); }
+function saveAppts(a)     { localStorage.setItem('appts',JSON.stringify(a)); }
+function getStocks()      { return JSON.parse(localStorage.getItem('stocks')||'[]'); }
+function saveStocks(s)    { localStorage.setItem('stocks',JSON.stringify(s)); }
+function getStockBase()   { return JSON.parse(localStorage.getItem('stockBase')||'{"white":{"hand":12,"stored":84},"black":{"hand":0,"stored":0}}'); }
+function saveStockBase(b) { localStorage.setItem('stockBase',JSON.stringify(b)); }
+
+// ── 탭 ──
+function showMainTab(id, el) {
+  document.querySelectorAll('.tab-screen').forEach(s=>s.classList.remove('show'));
+  document.querySelectorAll('.mtab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('show');
+  el.classList.add('active');
+  if(id==='appt') renderAppts();
+  if(id==='stock') renderStock();
+}
+
+// ── 폰선택 ──
+function renderTotalSummary() {
+  let qty=0,rev=0,pro=0;
+  for(let i=0;i<8;i++){
+    JSON.parse(localStorage.getItem('recs_'+i)||'[]').forEach(r=>{qty+=r.qty;rev+=r.sale*r.qty;pro+=r.profit;});
+  }
+  document.getElementById('tsQty').textContent=qty+'개';
+  document.getElementById('tsRev').textContent=fS(rev);
+  document.getElementById('tsPro').textContent=fS(pro);
+}
+
+function renderPhones() {
+  renderTotalSummary();
+  const g=document.getElementById('phoneGrid');
+  g.innerHTML='';
+  names.forEach((n,i)=>{
+    const recs=JSON.parse(localStorage.getItem('recs_'+i)||'[]');
+    const cnt=recs.length, pro=recs.reduce((a,r)=>a+r.profit,0);
+    const d=document.createElement('div');
+    d.className='phone-btn';
+    d.innerHTML=`<button class="edit-pn-btn" onclick="openEdit(event,${i})">✏️</button>
+      <div class="pi">${ICONS[i]}</div><div class="pn">${n}</div>
+      <div class="pc">${cnt?cnt+'건 기록':'기록 없음'}</div>
+      ${cnt?`<div class="ps">+${fS(pro)}만원`:''}`;
+    d.addEventListener('click',()=>pickPhone(i));
+    g.appendChild(d);
+  });
+}
+
+function pickPhone(i) {
+  cur=i;
+  document.getElementById('phoneScreen').style.display='none';
+  document.getElementById('mainApp').style.display='block';
+  document.getElementById('tbIcon').textContent=ICONS[i];
+  document.getElementById('tbName').textContent=names[i];
+  document.getElementById('fDate').value=todayStr();
+  renderAll(); renderAppts(); renderStock();
+}
+
+function goSelect() {
+  document.getElementById('phoneScreen').style.display='flex';
+  document.getElementById('mainApp').style.display='none';
+  function exportExcel() {
+  var csv = '\uFEFF' + '폰,판매일,색상,거래방법,수량,원가(원),배송비(원),판매가총액(원),수익(원),구매자이름,연락처,주소,택배사,운송장번호,메모\n';
+  var TRADE = {direct:'직거래', myship:'내재고택배', ddl:'둘둘랙택배'};
+  var pnames = JSON.parse(localStorage.getItem('pNames') || 'null') || ['폰 1','폰 2','폰 3','폰 4','폰 5','폰 6','폰 7','폰 8'];
+  for (var i = 0; i < 8; i++) {
+    var recs = JSON.parse(localStorage.getItem('recs_' + i) || '[]');
+    var pname = pnames[i] || ('폰 ' + (i+1));
+    recs.forEach(function(r) {
+      var b = r.buyer || {};
+      var row = [
+        pname, r.date, r.color || '', TRADE[r.trade] || r.trade || '',
+        r.qty, r.cost || 0, r.ship || 0, r.sale || 0, r.profit || 0,
+        b.name || '', b.phone || '', b.addr || '', b.courier || '', b.tracking || '',
+        (r.memo || '').replace(/,/g, '/')
+      ].join(',');
+      csv += row + '\n';
+    });
+  }
+  var blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = '철제선반판매일지_' + new Date().toISOString().split('T')[0] + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+renderPhones();
+}
+
+function openEdit(e,i){e.stopPropagation();editIdx=i;document.getElementById('editInput').value=names[i];document.getElementById('editModal').classList.add('open');setTimeout(()=>document.getElementById('editInput').focus(),80);}
+function closeEdit(){document.getElementById('editModal').classList.remove('open');}
+function saveName(){const v=document.getElementById('editInput').value.trim();if(!v)return;names[editIdx]=v;localStorage.setItem('pNames',JSON.stringify(names));closeEdit();renderPhones();if(cur===editIdx)document.getElementById('tbName').textContent=v;}
+document.getElementById('editModal').addEventListener('click',function(e){if(e.target===this)closeEdit();});
+
+// ── 거래유형 ──
+function setTrade(t) {
+  trade=t;
+  const sec=document.getElementById('delSec');
+  ['optDir','optDel','optDdl'].forEach(id=>document.getElementById(id).className='topt');
+  if(t==='direct'){document.getElementById('optDir').className='topt on-d';sec.classList.remove('show');}
+  else if(t==='myship'){document.getElementById('optDel').className='topt on-p';sec.classList.add('show');}
+  else if(t==='ddl'){document.getElementById('optDdl').className='topt on-h';sec.classList.add('show');}
+}
+
+// ── 수익계산 (판매가=총액, 원가=개당) ──
+function calcP() {
+  const cost=+document.getElementById('fCost').value||0;
+  const ship=+document.getElementById('fShip').value||0;
+  const sale=+document.getElementById('fSale').value||0;
+  const qty=+document.getElementById('fQty').value||1;
+  const p=sale-(cost+ship)*qty;
+  const el=document.getElementById('profitBox');
+  if(!cost&&!sale){el.textContent='입력해주세요';el.className='pbox';return;}
+  el.textContent=fW(p)+(qty>1?` (${qty}개, 개당 ${fW(Math.round(p/qty))})`:'');
+  el.className='pbox '+(p>=0?'pos':'neg');
+}
+
+// ── 판매기록 저장 ──
+function addRec() {
+  const date=document.getElementById('fDate').value;
+  const color=document.getElementById('fColor').value;
+  const qty=+document.getElementById('fQty').value||1;
+  const cost=+document.getElementById('fCost').value||0;
+  const ship=+document.getElementById('fShip').value||0;
+  const sale=+document.getElementById('fSale').value||0;
+  const memo=document.getElementById('fMemo').value.trim();
+  const name=color+' 5단 철제선반';
+  if(!date||!sale){alert('날짜와 판매가는 필수예요! 🙏');return;}
+  const rec={id:editingId||Date.now(),date,name,color,qty,cost,ship,sale,profit:sale-(cost+ship)*qty,memo,trade};
+  if(trade==='myship'||trade==='ddl') {
+    rec.buyer={name:document.getElementById('bName').value.trim(),phone:document.getElementById('bPhone').value.trim(),addr:document.getElementById('bAddr').value.trim(),courier:document.getElementById('bCourier').value,tracking:document.getElementById('bTracking').value.trim()};
+  }
+  // 직거래 or 내재고택배면 재고 자동차감 (새 기록일 때만)
+  if(!editingId && (trade==='direct'||trade==='myship')) {
+    autoDeductStock(color, qty);
+  }
+  let recs=getRecs();
+  if(editingId) recs=recs.map(r=>r.id===editingId?rec:r); else recs.unshift(rec);
+  saveRecs(recs); renderAll();
+  const wasEdit=!!editingId; clearForm();
+  const btn=document.getElementById('submitBtn');
+  btn.textContent=wasEdit?'✅ 수정완료!':'✅ 저장완료!';
+  setTimeout(()=>btn.textContent='▶ 기록 저장',1400);
+}
+
+function autoDeductStock(color, qty) {
+  // 판매기록 저장 시 재고 자동차감 로그 추가
+  const stocks=getStocks();
+  stocks.unshift({id:Date.now(),date:todayStr(),type: trade==='direct'?'out-direct':'out-myship',color,qty,memo:'판매일지 자동차감',auto:true});
+  saveStocks(stocks);
+  renderStock();
+}
+
+function startEdit(id) {
+  const r=getRecs().find(x=>x.id===id); if(!r)return;
+  editingId=id;
+  document.getElementById('fDate').value=r.date;
+  document.getElementById('fQty').value=r.qty;
+  document.getElementById('fColor').value=r.color||'화이트';
+  document.getElementById('fCost').value=r.cost||'';
+  document.getElementById('fShip').value=r.ship||'';
+  document.getElementById('fSale').value=r.sale;
+  document.getElementById('fMemo').value=r.memo||'';
+  setTrade(r.trade||'direct');
+  if((r.trade==='myship'||r.trade==='ddl')&&r.buyer){
+    document.getElementById('bName').value=r.buyer.name||'';
+    document.getElementById('bPhone').value=r.buyer.phone||'';
+    document.getElementById('bAddr').value=r.buyer.addr||'';
+    document.getElementById('bCourier').value=r.buyer.courier||'';
+    document.getElementById('bTracking').value=r.buyer.tracking||'';
+  }
+  calcP();
+  document.getElementById('editBanner').classList.add('show');
+  document.getElementById('formTitle').textContent='🔄 판매 기록 수정';
+  document.getElementById('submitBtn').textContent='▶ 수정 저장';
+  document.querySelector('.card').scrollIntoView({behavior:'smooth'});
+  showMainTab('sales',document.querySelector('.mtab'));
+}
+
+function cancelEdit(){editingId=null;clearForm();document.getElementById('editBanner').classList.remove('show');document.getElementById('formTitle').textContent='✏️ 판매 기록 추가';document.getElementById('submitBtn').textContent='▶ 기록 저장';}
+
+function clearForm(){
+  ['fCost','fShip','fSale','fMemo','bName','bPhone','bAddr','bTracking'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('fQty').value='1';
+  document.getElementById('bCourier').value='';
+  document.getElementById('fDate').value=todayStr();
+  document.getElementById('profitBox').textContent='입력해주세요';
+  document.getElementById('profitBox').className='pbox';
+  document.getElementById('editBanner').classList.remove('show');
+  document.getElementById('formTitle').textContent='✏️ 판매 기록 추가';
+  document.getElementById('submitBtn').textContent='▶ 기록 저장';
+  editingId=null; setTrade('direct');
+}
+
+function delRec(id){if(!confirm('삭제할까요?'))return;saveRecs(getRecs().filter(r=>r.id!==id));renderAll();}
+
+function setFilter(f,el){filter=f;document.querySelectorAll('#tab-sales .tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');renderList();}
+
+function getFiltered(){
+  const recs=getRecs(), now=new Date(), today=todayStr(), mo=today.substring(0,7);
+  const sw=new Date(now); sw.setDate(now.getDate()-now.getDay());
+  const weekS=sw.toISOString().split('T')[0];
+  return recs.filter(r=>{
+    if(filter==='today') return r.date===today;
+    if(filter==='week')  return r.date>=weekS;
+    if(filter==='month') return r.date.startsWith(mo);
+    if(filter==='direct') return r.trade==='direct';
+    if(filter==='myship') return r.trade==='myship';
+    if(filter==='ddl')    return r.trade==='ddl';
+    return true;
+  });
+}
+
+function updateStats(){
+  const recs=getRecs();
+  const t=recs.reduce((a,r)=>({qty:a.qty+r.qty,rev:a.rev+r.sale*r.qty,pro:a.pro+r.profit}),{qty:0,rev:0,pro:0});
+  document.getElementById('stQty').textContent=t.qty+'개';
+  document.getElementById('stRev').textContent=fS(t.rev);
+  document.getElementById('stPro').textContent=fS(t.pro);
+  document.getElementById('stDirect').textContent=recs.filter(r=>r.trade==='direct').reduce((a,r)=>a+r.qty,0)+'개';
+  document.getElementById('stMyship').textContent=recs.filter(r=>r.trade==='myship').reduce((a,r)=>a+r.qty,0)+'개';
+  document.getElementById('stDdl').textContent=recs.filter(r=>r.trade==='ddl').reduce((a,r)=>a+r.qty,0)+'개';
+}
+
+function renderList(){
+  const list=document.getElementById('recList'), data=getFiltered();
+  document.getElementById('recCount').textContent=data.length+'건';
+  if(!data.length){list.innerHTML=`<div class="empty"><div class="ei">📦</div><p>기록이 없어요!</p></div>`;return;}
+  let html='',lastM='';
+  const TRADE_LABEL={'direct':'🤝 직거래','myship':'📦 내재고택배','ddl':'🏭 둘둘랙택배'};
+  const TRADE_CHIP={'direct':'chip-r','myship':'chip-d','ddl':'chip-h'};
+  data.forEach(r=>{
+    const m=r.date.substring(0,7);
+    if(m!==lastM){const[y,mo]=m.split('-');html+=`<div class="mo-div">${y}년 ${+mo}월</div>`;lastM=m;}
+    const[,mo,d]=r.date.split('-');
+    const isDel=r.trade==='myship'||r.trade==='ddl';
+    let bHtml='';
+    if(isDel&&r.buyer){
+      const b=r.buyer;
+      bHtml=`<div class="buyer-box">
+        ${b.name?`<div class="br"><span class="bl">구매자</span><span>${b.name}</span></div>`:''}
+        ${b.phone?`<div class="br"><span class="bl">연락처</span><span>${b.phone}</span></div>`:''}
+        ${b.addr?`<div class="br"><span class="bl">주소</span><span>${b.addr}</span></div>`:''}
+        ${b.courier?`<div class="br"><span class="bl">택배사</span><span>${b.courier}${b.tracking?`<span class="tc">${b.tracking}</span>`:''}</span></div>`:''}
+      </div>`;
+    }
+    const colorChip=r.color==='블랙'?`<span style="background:#2C3E50;color:white;font-size:10px;padding:1px 6px;border-radius:2px;font-weight:700">⬛블랙</span>`:`<span style="background:#ECF0F1;color:#2C3E50;font-size:10px;padding:1px 6px;border-radius:2px;font-weight:700">⬜화이트</span>`;
+    html+=`<div class="rec ${r.trade==='myship'?'dr':r.trade==='ddl'?'hr':''}">
+      <div class="rec-btns"><button class="edit-btn" onclick="startEdit(${r.id})">✏️</button><button class="del-btn" onclick="delRec(${r.id})">✕</button></div>
+      <div class="rec-hd">
+        <div>
+          <div class="rec-meta"><span>${mo}월 ${d}일</span>${colorChip}<span class="chip ${TRADE_CHIP[r.trade]||'chip-r'}">${TRADE_LABEL[r.trade]||'직거래'}</span></div>
+          <div class="rec-name">${r.name||'5단 철제선반'}</div>
+        </div>
+        <div><div class="rec-profit ${r.profit<0?'loss':''}">${fW(r.profit)}</div><div style="font-size:10px;color:var(--steel);text-align:right">수익</div></div>
+      </div>
+      <div class="rec-details">
+        <span>📦 ${r.qty}개</span><span>💰 ${r.sale.toLocaleString()}원</span>
+        ${r.cost?`<span>💸 원가 ${r.cost.toLocaleString()}원</span>`:''}
+        ${r.ship?`<span>🚛 배송 ${r.ship.toLocaleString()}원</span>`:''}
+      </div>
+      ${bHtml}
+      ${r.memo?`<div class="rec-memo">💬 ${r.memo}</div>`:''}
+    </div>`;
+  });
+  list.innerHTML=html;
+}
+
+function renderAll(){updateStats();renderList();}
+
+// ══ 약속 메모 ══
+function openApptModal(id) {
+  editingApptId=id||null;
+  document.getElementById('apptModalTitle').textContent=id?'📅 약속 수정':'📅 약속 추가';
+  if(id){
+    const a=getAppts().find(x=>x.id===id);
+    if(a){
+      document.getElementById('aDate').value=a.date||'';
+      document.getElementById('aTime').value=a.time||'';
+      document.getElementById('aType').value=a.type||'pickup';
+      document.getElementById('aContent').value=a.content||'';
+      document.getElementById('aColor').value=a.color||'';
+      document.getElementById('aQty').value=a.qty||'';
+      document.getElementById('aPhone').value=a.phone||'';
+      document.getElementById('aMemo').value=a.memo||'';
+    }
+  } else {
+    ['aContent','aPhone','aMemo'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('aDate').value=todayStr();
+    document.getElementById('aTime').value='';
+    document.getElementById('aType').value='pickup';
+    document.getElementById('aColor').value='';
+    document.getElementById('aQty').value='';
+  }
+  document.getElementById('apptModal').classList.add('open');
+}
+
+function closeApptModal(){document.getElementById('apptModal').classList.remove('open');}
+
+function saveAppt(){
+  const content=document.getElementById('aContent').value.trim();
+  if(!content){alert('내용을 입력해주세요!');return;}
+  const appt={
+    id:editingApptId||Date.now(),
+    date:document.getElementById('aDate').value,
+    time:document.getElementById('aTime').value,
+    type:document.getElementById('aType').value,
+    content,
+    color:document.getElementById('aColor').value,
+    qty:document.getElementById('aQty').value,
+    phone:document.getElementById('aPhone').value.trim(),
+    memo:document.getElementById('aMemo').value.trim(),
+    done:false
+  };
+  let appts=getAppts();
+  if(editingApptId) appts=appts.map(a=>a.id===editingApptId?{...a,...appt,done:a.done}:a);
+  else appts.unshift(appt);
+  saveAppts(appts); closeApptModal(); renderAppts();
+}
+
+function toggleApptDone(id){
+  const appts=getAppts().map(a=>a.id===id?{...a,done:!a.done}:a);
+  saveAppts(appts); renderAppts();
+}
+
+function delAppt(id){if(!confirm('삭제할까요?'))return;saveAppts(getAppts().filter(a=>a.id!==id));renderAppts();}
+
+function setApptFilter(f,el){apptFilter=f;document.querySelectorAll('#tab-appt .tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');renderAppts();}
+
+function renderAppts(){
+  const appts=getAppts();
+  const today=todayStr();
+  const tomorrow=new Date(); tomorrow.setDate(tomorrow.getDate()+1);
+  const tmrStr=tomorrow.toISOString().split('T')[0];
+
+  // 긴급 알림 (오늘/내일 미완료)
+  const urgent=appts.filter(a=>!a.done&&(a.date===today||a.date===tmrStr));
+  const urgentEl=document.getElementById('urgentAppts');
+  if(urgent.length){
+    urgentEl.innerHTML=`<div class="appt-urgent">
+      <div class="appt-urgent-title">⚡ 오늘/내일 약속 ${urgent.length}건</div>
+      ${urgent.map(a=>`
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px dashed #F0AD4E;font-size:13px">
+          <span>${a.date===today?'📍오늘':'📅내일'} ${a.time?a.time+' ':''}<strong>${a.content}</strong></span>
+          <button onclick="toggleApptDone(${a.id})" style="background:var(--green);color:white;border:none;padding:3px 8px;border-radius:2px;font-size:11px;cursor:pointer">완료</button>
+        </div>`).join('')}
+    </div>`;
+  } else {
+    urgentEl.innerHTML='';
+  }
+
+  // 필터
+  let data=appts;
+  if(apptFilter==='upcoming') data=appts.filter(a=>!a.done&&a.date>=today).sort((a,b)=>a.date.localeCompare(b.date)||(a.time||'').localeCompare(b.time||''));
+  else if(apptFilter==='today') data=appts.filter(a=>a.date===today);
+  else if(apptFilter==='tomorrow') data=appts.filter(a=>a.date===tmrStr);
+  else if(apptFilter==='done') data=appts.filter(a=>a.done);
+  else data=[...appts].sort((a,b)=>b.date.localeCompare(a.date));
+
+  const list=document.getElementById('apptList');
+  if(!data.length){list.innerHTML=`<div class="empty"><div class="ei">📅</div><p>약속이 없어요!</p></div>`;return;}
+
+  const TYPE_LABEL={pickup:'🤝 직거래 픽업',delivery:'📦 택배 발송',call:'📞 연락',stock:'📦 재고 가져오기',other:'📌 기타'};
+  const TYPE_CLASS={pickup:'at-pickup',delivery:'at-delivery',call:'at-call',stock:'at-pickup',other:'at-other'};
+
+  list.innerHTML=data.map(a=>{
+    const isToday=a.date===today, isTmr=a.date===tmrStr;
+    const isOver=!a.done&&a.date<today;
+    let cls='appt-item';
+    if(a.done) cls+=' done';
+    else if(isOver) cls+=' overdue';
+    else if(isToday) cls+=' today-item';
+    else if(isTmr) cls+=' tmr-item';
+
+    let badge='';
+    if(a.done) badge=`<span class="appt-badge ab-done">✅ 완료</span>`;
+    else if(isOver) badge=`<span class="appt-badge ab-over">⚠️ 지남</span>`;
+    else if(isToday) badge=`<span class="appt-badge ab-today">📍 오늘</span>`;
+    else if(isTmr) badge=`<span class="appt-badge ab-tmr">📅 내일</span>`;
+    else badge=`<span class="appt-badge ab-future">${a.date.substring(5).replace('-','/')}</span>`;
+
+    const[,mo,d]=a.date.split('-');
+    return `<div class="${cls}">
+      <div class="appt-top">
+        <div>
+          <div class="appt-time"><span class="adate">${mo}월 ${d}일</span>${a.time||''}<span class="appt-type-badge ${TYPE_CLASS[a.type]}">${TYPE_LABEL[a.type]}</span></div>
+          <div class="appt-content">${a.content}${a.color?` <span style="font-size:12px;font-weight:400">[${a.color}${a.qty?' '+a.qty+'개':''}]</span>`:''}</div>
+        </div>
+        ${badge}
+      </div>
+      ${a.phone?`<div style="font-size:12px;color:var(--blue);margin-bottom:3px">📞 ${a.phone}</div>`:''}
+      ${a.memo?`<div class="appt-memo">💬 ${a.memo}</div>`:''}
+      <div class="appt-btns">
+        ${!a.done?`<button class="appt-btn ab-done-btn" onclick="toggleApptDone(${a.id})">✅ 완료</button>`:`<button class="appt-btn ab-edit-btn" onclick="toggleApptDone(${a.id})">↩ 되돌리기</button>`}
+        <button class="appt-btn ab-edit-btn" onclick="openApptModal(${a.id})">✏️ 수정</button>
+        <button class="appt-btn ab-del-btn" onclick="delAppt(${a.id})">🗑️ 삭제</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+document.getElementById('apptModal').addEventListener('click',function(e){if(e.target===this)closeApptModal();});
+
+// ══ 재고관리 ══
+function setIOType(t){
+  ioType=t;
+  ['ioIn','ioOut','ioMyship','ioDdl','ioMove'].forEach(id=>{
+    const el=document.getElementById(id);
+    el.className='io-btn';
+  });
+  const map={in:'ioIn','out-direct':'ioOut','out-myship':'ioMyship','out-ddl':'ioDdl','move':'ioMove'};
+  const activeEl=document.getElementById(map[t]);
+  if(activeEl){
+    if(t==='in') activeEl.className='io-btn on-in';
+    else if(t==='move') activeEl.className='io-btn on-move';
+    else activeEl.className='io-btn on-out';
+  }
+  document.getElementById('ioStoredNote').style.display=t==='move'?'block':'none';
+}
+
+function openStockModal(){
+  document.getElementById('ioDate').value=todayStr();
+  document.getElementById('ioQty').value='';
+  document.getElementById('ioMemo').value='';
+  document.getElementById('ioColor').value='화이트';
+  setIOType('in');
+  document.getElementById('stockModal').classList.add('open');
+}
+
+function closeStockModal(){document.getElementById('stockModal').classList.remove('open');}
+
+function saveStock(){
+  const qty=+document.getElementById('ioQty').value||0;
+  if(!qty){alert('수량을 입력해주세요!');return;}
+  const stock={
+    id:Date.now(),
+    date:document.getElementById('ioDate').value,
+    type:ioType,
+    color:document.getElementById('ioColor').value,
+    qty,
+    memo:document.getElementById('ioMemo').value.trim()
+  };
+  const stocks=getStocks();
+  stocks.unshift(stock);
+  saveStocks(stocks);
+  closeStockModal();
+  renderStock();
+}
+
+function delStock(id){if(!confirm('삭제할까요?'))return;saveStocks(getStocks().filter(s=>s.id!==id));renderStock();}
+
+function setStockFilter(f,el){stockFilter=f;document.querySelectorAll('#tab-stock .tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');renderStock();}
+
+function calcStockSummary(){
+  const base=getStockBase();
+  const stocks=getStocks();
+  const today=todayStr();
+
+  // 색상별 계산
+  const summary={
+    white:{hand:base.white.hand, stored:base.white.stored, totalIn:0, totalOut:0, todayOut:0},
+    black:{hand:base.black.hand, stored:base.black.stored, totalIn:0, totalOut:0, todayOut:0}
+  };
+
+  stocks.forEach(s=>{
+    const c=s.color==='블랙'?'black':'white';
+    if(s.type==='in'){ summary[c].hand+=s.qty; summary[c].totalIn+=s.qty; }
+    else if(s.type==='move'){ summary[c].stored-=s.qty; summary[c].hand+=s.qty; }
+    else if(s.type==='out-ddl'){ summary[c].totalOut+=s.qty; if(s.date===today)summary[c].todayOut+=s.qty; }
+    else { summary[c].hand-=s.qty; summary[c].totalOut+=s.qty; if(s.date===today)summary[c].todayOut+=s.qty; }
+  });
+
+  return summary;
+}
+
+function renderStock(){
+  const s=calcStockSummary();
+  const totalHand=(s.white.hand||0)+(s.black.hand||0);
+  const totalStored=(s.white.stored||0)+(s.black.stored||0);
+  const todayOut=(s.white.todayOut||0)+(s.black.todayOut||0);
+
+  document.getElementById('sk-total').textContent=(totalHand+totalStored)+'개';
+  document.getElementById('sk-myhand').textContent=totalHand+'개';
+  document.getElementById('sk-stored').textContent=totalStored+'개';
+  document.getElementById('sk-sold').textContent=todayOut+'개';
+
+  document.getElementById('sk-white').textContent=(s.white.hand+s.white.stored)+'개';
+  document.getElementById('sk-white-hand').textContent=s.white.hand+'개';
+  document.getElementById('sk-white-stored').textContent=s.white.stored+'개';
+  document.getElementById('sk-white-in').textContent=s.white.totalIn+'개';
+  document.getElementById('sk-white-out').textContent=s.white.totalOut+'개';
+
+  document.getElementById('sk-black').textContent=(s.black.hand+s.black.stored)+'개';
+  document.getElementById('sk-black-hand').textContent=s.black.hand+'개';
+  document.getElementById('sk-black-stored').textContent=s.black.stored+'개';
+  document.getElementById('sk-black-in').textContent=s.black.totalIn+'개';
+  document.getElementById('sk-black-out').textContent=s.black.totalOut+'개';
+
+  // 목록
+  const today=todayStr();
+  let data=getStocks();
+  if(stockFilter==='in') data=data.filter(s=>s.type==='in');
+  else if(stockFilter==='out') data=data.filter(s=>s.type!=='in'&&s.type!=='move');
+  else if(stockFilter==='today') data=data.filter(s=>s.date===today);
+  else if(stockFilter==='white') data=data.filter(s=>s.color==='화이트');
+  else if(stockFilter==='black') data=data.filter(s=>s.color==='블랙');
+
+  const list=document.getElementById('stockList');
+  if(!data.length){list.innerHTML=`<div class="empty"><div class="ei">📦</div><p>기록이 없어요!</p></div>`;return;}
+
+  const TYPE_INFO={
+    in:{label:'▲ 입고',cls:'ic-in',sign:'+',qty:'plus'},
+    'out-direct':{label:'🤝 직거래 출고',cls:'ic-direct',sign:'-',qty:'minus'},
+    'out-myship':{label:'📦 내재고택배 출고',cls:'ic-myship',sign:'-',qty:'minus'},
+    'out-ddl':{label:'🏭 둘둘랙 출고',cls:'ic-ddl',sign:'',qty:''},
+    move:{label:'🔄 맡긴→내손 이동',cls:'ic-move',sign:'',qty:'orange'}
+  };
+
+  list.innerHTML=data.map(s=>{
+    const ti=TYPE_INFO[s.type]||TYPE_INFO['out-direct'];
+    const[,mo,d]=s.date.split('-');
+    const colorChip=s.color==='블랙'?'⬛':'⬜';
+    return `<div class="io-item ${s.type}${s.auto?' auto':''}">
+      <div style="position:absolute;top:7px;right:7px"><button class="del-btn" onclick="delStock(${s.id})">✕</button></div>
+      <div class="io-top">
+        <div>
+          <div class="io-meta" style="margin-bottom:3px">
+            <span>${mo}월 ${d}일</span>
+            <span class="io-chip ${ti.cls}">${ti.label}</span>
+            <span>${colorChip} ${s.color}</span>
+          </div>
+          <div class="io-info">${s.memo||ti.label}</div>
+        </div>
+        <div class="io-qty ${ti.qty}">${ti.sign}${s.qty}개</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+document.getElementById('stockModal').addEventListener('click',function(e){if(e.target===this)closeStockModal();});
+
+// ── 유틸 ──
+function todayStr(){return new Date().toISOString().split('T')[0];}
+function fW(n){return Math.abs(n)>=10000?(n/10000).toFixed(1)+'만원':n.toLocaleString()+'원';}
+function fS(n){return (n/10000).toFixed(1);}
+
+renderPhones();
+</script>
+</body>
+</html>
