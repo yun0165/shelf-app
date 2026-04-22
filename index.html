@@ -590,54 +590,47 @@ function pickPhone(i) {
 }
 
 function goSelect() {
-  document.getElementById('phoneScreen').style.display='flex';
-  document.getElementById('mainApp').style.display='none';
-
+  document.getElementById('phoneScreen').style.display = 'flex';
+  document.getElementById('mainApp').style.display = 'none';
+  renderPhones();
+}
 
 function exportExcel() {
   var csv = '\uFEFF' + '폰,판매일,색상,거래방법,수량,원가(원),배송비(원),판매가총액(원),수익(원),구매자이름,연락처,주소,택배사,운송장번호,메모\n';
-  var TRADE = {direct:'직거래', myship:'내재고택배', ddl:'둘둘랙택배'};
-  var pnames = JSON.parse(localStorage.getItem('pNames') || 'null') || ['폰 1','폰 2','폰 3','폰 4','폰 5','폰 6','폰 7','폰 8'];
-  for (var i = 0; i < 8; i++) {
+  var TRADE = { direct:'직거래', myship:'내재고택배', ddl:'둘둘랙택배' };
+  var pnames = JSON.parse(localStorage.getItem('pNames') || 'null') || ['폰 1','폰 2','폰 3','폰 4','폰 5','폰 6','폰 7','폰 8','폰 9','폰 10'];
+  for (var i = 0; i < 10; i++) {
     var recs = JSON.parse(localStorage.getItem('recs_' + i) || '[]');
-    var pname = pnames[i] || ('폰 ' + (i+1));
+    var pname = pnames[i] || ('폰 ' + (i + 1));
     recs.forEach(function(r) {
       var b = r.buyer || {};
-      var row = [
-        pname, r.date, r.color || '', TRADE[r.trade] || r.trade || '',
-        r.qty, r.cost || 0, r.ship || 0, r.sale || 0, r.profit || 0,
-        b.name || '', b.phone || '', b.addr || '', b.courier || '', b.tracking || '',
-        (r.memo || '').replace(/,/g, '/')
-      ].join(',');
+      var row = [pname,r.date||'',r.color||'',TRADE[r.trade]||r.trade||'',r.qty||0,r.cost||0,r.ship||0,r.sale||0,r.profit||0,b.name||'',b.phone||'',b.addr||'',b.courier||'',b.tracking||'',(r.memo||'').replace(/,/g,'/').replace(/\n/g,' ')].join(',');
       csv += row + '\n';
     });
   }
-  var blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
+  var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   var url = URL.createObjectURL(blob);
   var a = document.createElement('a');
   a.href = url;
   a.download = '철제선반판매일지_' + new Date().toISOString().split('T')[0] + '.csv';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
 }
 
 function kakaoBackup() {
   var text = '📦 철제선반 판매일지 백업\n';
   text += new Date().toLocaleDateString('ko-KR') + '\n\n';
   var pnames = JSON.parse(localStorage.getItem('pNames') || 'null') || ['폰 1','폰 2','폰 3','폰 4','폰 5','폰 6','폰 7','폰 8','폰 9','폰 10'];
-  var TRADE = {direct:'직거래', myship:'내재고택배', ddl:'둘둘랙택배'};
-  var totalQty=0, totalProfit=0;
-  for (var i=0; i<10; i++) {
-    var recs = JSON.parse(localStorage.getItem('recs_'+i) || '[]');
+  var TRADE = { direct:'직거래', myship:'내재고택배', ddl:'둘둘랙택배' };
+  var totalQty = 0, totalProfit = 0;
+  for (var i = 0; i < 10; i++) {
+    var recs = JSON.parse(localStorage.getItem('recs_' + i) || '[]');
     if (!recs.length) continue;
-    var pname = pnames[i] || ('폰 '+(i+1));
+    var pname = pnames[i] || ('폰 ' + (i + 1));
     text += '📱 ' + pname + '\n';
     recs.forEach(function(r) {
-      text += r.date + ' | ' + (r.color||'') + ' | ' + (TRADE[r.trade]||r.trade||'') + ' | ' + r.qty + '개 | ' + r.sale.toLocaleString() + '원 | 수익 ' + r.profit.toLocaleString() + '원\n';
-      totalQty += r.qty;
-      totalProfit += r.profit;
+      text += (r.date||'') + ' | ' + (r.color||'') + ' | ' + (TRADE[r.trade]||r.trade||'') + ' | ' + (r.qty||0) + '개 | ' + Number(r.sale||0).toLocaleString() + '원 | 수익 ' + Number(r.profit||0).toLocaleString() + '원\n';
+      totalQty += Number(r.qty||0);
+      totalProfit += Number(r.profit||0);
     });
     text += '\n';
   }
@@ -645,18 +638,44 @@ function kakaoBackup() {
   text += '총 판매: ' + totalQty + '개\n';
   text += '총 수익: ' + totalProfit.toLocaleString() + '원';
 
-  // 팝업창에 텍스트 보여주기 - 폰에서 가장 확실한 방법
+  var oldPopup = document.getElementById('backupPopup');
+  if (oldPopup) oldPopup.remove();
+
   var popup = document.createElement('div');
+  popup.id = 'backupPopup';
   popup.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
   popup.innerHTML = '<div style="background:white;border-radius:8px;padding:20px;width:100%;max-width:400px;max-height:80vh;overflow-y:auto;">'
     + '<div style="font-family:Black Han Sans,sans-serif;font-size:15px;color:#2C3E50;margin-bottom:12px;">💬 카카오톡 백업</div>'
-    + '<textarea id="backupText" style="width:100%;height:200px;border:2px solid #E8E0D0;border-radius:4px;padding:10px;font-size:12px;font-family:monospace;resize:none;">' + text + '</textarea>'
-    + '<div style="font-size:12px;color:#7F8C8D;margin:8px 0;">위 텍스트를 길게 눌러 전체선택 → 복사 → 카카오톡에 붙여넣기!</div>'
-    + '<button onclick="var t=document.getElementById('backupText');t.select();t.setSelectionRange(0,99999);document.execCommand('copy');alert('복사됐어요! 카카오톡에 붙여넣기 하세요 😊');" style="width:100%;padding:12px;background:#FEE500;color:#3C1E1E;border:none;border-radius:4px;font-weight:700;font-size:14px;cursor:pointer;margin-bottom:8px;">📋 전체 복사하기</button>'
-    + '<button onclick="this.parentElement.parentElement.remove();" style="width:100%;padding:10px;background:#EEE;border:none;border-radius:4px;font-weight:700;font-size:13px;cursor:pointer;">닫기</button>'
+    + '<textarea id="backupText" style="width:100%;height:220px;border:2px solid #E8E0D0;border-radius:4px;padding:10px;font-size:12px;font-family:monospace;resize:none;"></textarea>'
+    + '<div style="font-size:12px;color:#7F8C8D;margin:8px 0 12px;">복사 후 카카오톡 나와의 채팅에 붙여넣기 하세요!</div>'
+    + '<button id="copyBackupBtn" style="width:100%;padding:12px;background:#FEE500;color:#3C1E1E;border:none;border-radius:4px;font-weight:700;font-size:14px;cursor:pointer;margin-bottom:8px;">📋 전체 복사하기</button>'
+    + '<button id="closeBackupBtn" style="width:100%;padding:10px;background:#EEE;border:none;border-radius:4px;font-weight:700;font-size:13px;cursor:pointer;">닫기</button>'
     + '</div>';
   document.body.appendChild(popup);
+
+  document.getElementById('backupText').value = text;
+
+  document.getElementById('copyBackupBtn').onclick = async function() {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        var ta = document.getElementById('backupText');
+        ta.focus(); ta.select(); ta.setSelectionRange(0, ta.value.length);
+        document.execCommand('copy');
+      }
+      alert('복사됐어요. 카카오톡에 붙여넣기 하세요 😊');
+    } catch(e) {
+      var ta = document.getElementById('backupText');
+      ta.focus(); ta.select(); ta.setSelectionRange(0, ta.value.length);
+      alert('자동 복사가 안 되면 길게 눌러 직접 복사해 주세요.');
+    }
+  };
+  document.getElementById('closeBackupBtn').onclick = function() { popup.remove(); };
+  popup.addEventListener('click', function(e) { if (e.target === popup) popup.remove(); });
 }
+
+
 
 renderPhones();
 }
@@ -1093,4 +1112,32 @@ function renderStock(){
   list.innerHTML=data.map(s=>{
     const ti=TYPE_INFO[s.type]||TYPE_INFO['out-direct'];
     const[,mo,d]=s.date.split('-');
-    const colorChip=s.color
+    const colorChip=s.color==='블랙'?'⬛':'⬜';
+    return `<div class="io-item ${s.type}${s.auto?' auto':''}">
+      <div style="position:absolute;top:7px;right:7px"><button class="del-btn" onclick="delStock(${s.id})">✕</button></div>
+      <div class="io-top">
+        <div>
+          <div class="io-meta" style="margin-bottom:3px">
+            <span>${mo}월 ${d}일</span>
+            <span class="io-chip ${ti.cls}">${ti.label}</span>
+            <span>${colorChip} ${s.color}</span>
+          </div>
+          <div class="io-info">${s.memo||ti.label}</div>
+        </div>
+        <div class="io-qty ${ti.qty}">${ti.sign}${s.qty}개</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+document.getElementById('stockModal').addEventListener('click',function(e){if(e.target===this)closeStockModal();});
+
+// ── 유틸 ──
+function todayStr(){return new Date().toISOString().split('T')[0];}
+function fW(n){return Math.abs(n)>=10000?(n/10000).toFixed(1)+'만원':n.toLocaleString()+'원';}
+function fS(n){return (n/10000).toFixed(1);}
+
+renderPhones();
+</script>
+</body>
+</html>
