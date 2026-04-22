@@ -239,7 +239,8 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--light-bg);
       <div class="ts-box"><div class="ts-val green" id="tsPro">0</div><div class="ts-lbl">수익(만원)</div></div>
     </div>
   </div>
-  <button onclick="exportExcel()" style="width:100%;max-width:380px;background:#27AE60;color:white;border:none;padding:12px;border-radius:4px;font-family:'Black Han Sans',sans-serif;font-size:13px;letter-spacing:1px;cursor:pointer;margin-bottom:10px;">📊 전체 데이터 엑셀 내보내기</button>
+  <button onclick="exportExcel()" style="width:100%;max-width:380px;background:#27AE60;color:white;border:none;padding:12px;border-radius:4px;font-family:'Black Han Sans',sans-serif;font-size:13px;letter-spacing:1px;cursor:pointer;margin-bottom:6px;">📊 전체 데이터 엑셀 내보내기</button>
+  <button onclick="kakaoBackup()" style="width:100%;max-width:380px;background:#FEE500;color:#3C1E1E;border:none;padding:12px;border-radius:4px;font-family:'Black Han Sans',sans-serif;font-size:13px;letter-spacing:1px;cursor:pointer;margin-bottom:10px;">💬 카카오톡으로 백업하기</button>
   <div class="phone-grid" id="phoneGrid"></div>
   <p style="font-size:11px;color:var(--steel);text-align:center">✏️ 버튼으로 폰 이름 수정 가능</p>
 </div>
@@ -618,6 +619,47 @@ function goSelect() {
   document.body.appendChild(a);
   a.click();
   setTimeout(function(){ document.body.removeChild(a); }, 300);
+}
+
+function kakaoBackup() {
+  var TRADE = {direct:'직거래', myship:'내재고택배', ddl:'둘둘랙택배'};
+  var pnames = JSON.parse(localStorage.getItem('pNames') || 'null') || ['폰 1','폰 2','폰 3','폰 4','폰 5','폰 6','폰 7','폰 8'];
+  var lines = ['📦 철제선반 판매일지 백업\n' + new Date().toLocaleDateString('ko-KR') + '\n'];
+  var total = 0, totalProfit = 0;
+  for (var i = 0; i < 8; i++) {
+    var recs = JSON.parse(localStorage.getItem('recs_' + i) || '[]');
+    if (recs.length === 0) continue;
+    var pname = pnames[i] || ('폰 ' + (i+1));
+    lines.push('\n[' + pname + '] ' + recs.length + '건');
+    recs.forEach(function(r) {
+      var profit = r.profit || 0;
+      totalProfit += profit;
+      total++;
+      lines.push(r.date + ' ' + (r.color||'') + ' ' + (TRADE[r.trade]||r.trade||'') + ' ' + (r.qty||1) + '개 수익:' + profit.toLocaleString() + '원');
+    });
+  }
+  lines.push('\n총 ' + total + '건 / 총수익 ' + totalProfit.toLocaleString() + '원');
+  var text = lines.join('\n');
+  var kakaoUrl = 'kakaoplus://plusfriend/talk/';
+  // 나에게 보내기 - 카카오톡 공유
+  if (navigator.share) {
+    navigator.share({ title: '철제선반 판매일지 백업', text: text });
+  } else {
+    // 클립보드 복사 후 안내
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(function() {
+        alert('📋 복사됐어요!\n카카오톡 나에게 보내기에 붙여넣기 해주세요!');
+      });
+    } else {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      alert('📋 복사됐어요!\n카카오톡 나에게 보내기에 붙여넣기 해주세요!');
+    }
+  }
 }
 
 renderPhones();
