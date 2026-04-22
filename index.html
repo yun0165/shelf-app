@@ -416,6 +416,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--light-bg);
       </div>
     </div>
 
+    <button onclick="resetStockData()" style="width:100%;background:#E74C3C;color:white;border:none;padding:10px;border-radius:2px;font-family:'Black Han Sans',sans-serif;font-size:12px;letter-spacing:1px;cursor:pointer;margin-bottom:8px;">🔄 재고 전체 초기화 (처음부터 시작)</button>
     <button onclick="openStockModal()" style="width:100%;background:var(--iron);color:white;border:none;padding:13px;border-radius:2px;font-family:'Black Han Sans',sans-serif;font-size:14px;letter-spacing:2px;cursor:pointer;margin-bottom:13px;">
       ＋ 입출고 기록
     </button>
@@ -1056,6 +1057,13 @@ function saveStock(){
 }
 
 function delStock(id){if(!confirm('삭제할까요?'))return;saveStocks(getStocks().filter(s=>s.id!==id));renderStock();}
+
+function resetStockData(){
+  if(!confirm('재고 기록을 전부 삭제하고 처음부터 시작할까요?\n(이 작업은 되돌릴 수 없어요!)')) return;
+  localStorage.removeItem('stocks');
+  renderStock();
+  alert('초기화 완료! 이제 입고부터 다시 입력해주세요 😊');
+}
 
 function setStockFilter(f,el){stockFilter=f;document.querySelectorAll('#tab-stock .tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');renderStock();}
 
