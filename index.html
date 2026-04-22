@@ -239,8 +239,6 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--light-bg);
       <div class="ts-box"><div class="ts-val green" id="tsPro">0</div><div class="ts-lbl">수익(만원)</div></div>
     </div>
   </div>
-  <button onclick="exportExcel()" style="width:100%;max-width:380px;background:#27AE60;color:white;border:none;padding:12px;border-radius:4px;font-family:'Black Han Sans',sans-serif;font-size:13px;letter-spacing:1px;cursor:pointer;margin-bottom:6px;">📊 전체 데이터 엑셀 내보내기</button>
-  <button onclick="kakaoBackup()" style="width:100%;max-width:380px;background:#FEE500;color:#3C1E1E;border:none;padding:12px;border-radius:4px;font-family:'Black Han Sans',sans-serif;font-size:13px;letter-spacing:1px;cursor:pointer;margin-bottom:10px;">💬 카카오톡으로 백업하기</button>
   <div class="phone-grid" id="phoneGrid"></div>
   <p style="font-size:11px;color:var(--steel);text-align:center">✏️ 버튼으로 폰 이름 수정 가능</p>
 </div>
@@ -325,7 +323,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--light-bg);
         <div class="csym">−</div>
         <div class="fg"><label>🚛 배송비(원)</label><input type="number" id="fShip" placeholder="0" oninput="calcP()"></div>
         <div class="csym">+</div>
-        <div class="fg"><label>💰 판매가 <small style='color:#2980B9'>개당(원)</small></label><input type="number" id="fSale" placeholder="0" oninput="calcP()"></div>
+        <div class="fg"><label>💰 판매가 <small style='color:#2980B9'>총액(원)</small></label><input type="number" id="fSale" placeholder="0" oninput="calcP()"></div>
       </div>
       <div style="font-size:11px;font-weight:700;color:var(--steel);margin-bottom:4px">📊 예상 수익</div>
       <div class="pbox" id="profitBox">입력해주세요</div>
@@ -416,7 +414,6 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--light-bg);
       </div>
     </div>
 
-    <button onclick="resetStockData()" style="width:100%;background:#E74C3C;color:white;border:none;padding:10px;border-radius:2px;font-family:'Black Han Sans',sans-serif;font-size:12px;letter-spacing:1px;cursor:pointer;margin-bottom:8px;">🔄 재고 전체 초기화 (처음부터 시작)</button>
     <button onclick="openStockModal()" style="width:100%;background:var(--iron);color:white;border:none;padding:13px;border-radius:2px;font-family:'Black Han Sans',sans-serif;font-size:14px;letter-spacing:2px;cursor:pointer;margin-bottom:13px;">
       ＋ 입출고 기록
     </button>
@@ -446,6 +443,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--light-bg);
       <select id="aType">
         <option value="pickup">🤝 직거래 픽업</option>
         <option value="delivery">📦 택배 발송</option>
+        <option value="ddl">🏍️ 배달</option>
         <option value="call">📞 연락/전화</option>
         <option value="stock">📦 재고 가져오기</option>
         <option value="other">📌 기타</option>
@@ -524,8 +522,8 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--light-bg);
 </div>
 
 <script>
-const ICONS=['📱','📲','🔵','🟠','🟢','🟣','🟤','⚫'];
-const DNAMES=['폰 1','폰 2','폰 3','폰 4','폰 5','폰 6','폰 7','폰 8'];
+const ICONS=['📱','📲','🔵','🟠','🟢','🟣','🟤','⚫','🔴','🟡'];
+const DNAMES=['폰 1','폰 2','폰 3','폰 4','폰 5','폰 6','폰 7','폰 8','폰 9','폰 10'];
 let names=JSON.parse(localStorage.getItem('pNames')||'null')||[...DNAMES];
 let cur=null, filter='all', trade='direct', editIdx=null, editingId=null;
 let apptFilter='upcoming', editingApptId=null;
@@ -538,7 +536,7 @@ function getAppts()       { return JSON.parse(localStorage.getItem('appts')||'[]
 function saveAppts(a)     { localStorage.setItem('appts',JSON.stringify(a)); }
 function getStocks()      { return JSON.parse(localStorage.getItem('stocks')||'[]'); }
 function saveStocks(s)    { localStorage.setItem('stocks',JSON.stringify(s)); }
-function getStockBase()   { return JSON.parse(localStorage.getItem('stockBase')||'{"white":{"hand":0,"stored":0},"black":{"hand":0,"stored":0}}'); }
+function getStockBase()   { return JSON.parse(localStorage.getItem('stockBase')||'{"white":{"hand":12,"stored":84},"black":{"hand":0,"stored":0}}'); }
 function saveStockBase(b) { localStorage.setItem('stockBase',JSON.stringify(b)); }
 
 // ── 탭 ──
@@ -554,7 +552,7 @@ function showMainTab(id, el) {
 // ── 폰선택 ──
 function renderTotalSummary() {
   let qty=0,rev=0,pro=0;
-  for(let i=0;i<8;i++){
+  for(let i=0;i<10;i++){
     JSON.parse(localStorage.getItem('recs_'+i)||'[]').forEach(r=>{qty+=r.qty;rev+=r.sale*r.qty;pro+=r.profit;});
   }
   document.getElementById('tsQty').textContent=qty+'개';
@@ -593,9 +591,7 @@ function pickPhone(i) {
 function goSelect() {
   document.getElementById('phoneScreen').style.display='flex';
   document.getElementById('mainApp').style.display='none';
-}
-
-function exportExcel() {
+  function exportExcel() {
   var csv = '\uFEFF' + '폰,판매일,색상,거래방법,수량,원가(원),배송비(원),판매가총액(원),수익(원),구매자이름,연락처,주소,택배사,운송장번호,메모\n';
   var TRADE = {direct:'직거래', myship:'내재고택배', ddl:'둘둘랙택배'};
   var pnames = JSON.parse(localStorage.getItem('pNames') || 'null') || ['폰 1','폰 2','폰 3','폰 4','폰 5','폰 6','폰 7','폰 8'];
@@ -613,88 +609,19 @@ function exportExcel() {
       csv += row + '\n';
     });
   }
-  var filename = '철제선반판매일지_' + new Date().toISOString().split('T')[0] + '.csv';
-  var dataUri = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  var blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
+  var url = URL.createObjectURL(blob);
   var a = document.createElement('a');
-  a.href = dataUri;
-  a.download = filename;
-  a.style.display = 'none';
+  a.href = url;
+  a.download = '철제선반판매일지_' + new Date().toISOString().split('T')[0] + '.csv';
   document.body.appendChild(a);
   a.click();
-  setTimeout(function(){ document.body.removeChild(a); }, 300);
-}
-
-function kakaoBackup() {
-  var TRADE = {direct:'직거래', myship:'내재고택배', ddl:'둘둘랙택배'};
-  var pnames = JSON.parse(localStorage.getItem('pNames') || 'null') || ['폰 1','폰 2','폰 3','폰 4','폰 5','폰 6','폰 7','폰 8'];
-  var lines = ['📦 철제선반 판매일지 백업', new Date().toLocaleDateString('ko-KR'), ''];
-  var total = 0, totalProfit = 0;
-  for (var i = 0; i < 8; i++) {
-    var recs = JSON.parse(localStorage.getItem('recs_' + i) || '[]');
-    if (recs.length === 0) continue;
-    var pname = pnames[i] || ('폰 ' + (i+1));
-    lines.push('[' + pname + '] ' + recs.length + '건');
-    recs.forEach(function(r) {
-      var profit = r.profit || 0;
-      totalProfit += profit;
-      total++;
-      lines.push(r.date + ' ' + (r.color||'') + ' ' + (TRADE[r.trade]||r.trade||'') + ' ' + (r.qty||1) + '개 수익:' + profit.toLocaleString() + '원');
-    });
-    lines.push('');
-  }
-  lines.push('총 ' + total + '건 / 총수익 ' + totalProfit.toLocaleString() + '원');
-  var text = lines.join('\n');
-  
-  // 백업 화면으로 전환
-  var backupDiv = document.getElementById('backupScreen');
-  if (!backupDiv) {
-    backupDiv = document.createElement('div');
-    backupDiv.id = 'backupScreen';
-    backupDiv.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:#f5f0e8;z-index:9999;display:flex;flex-direction:column;padding:16px;box-sizing:border-box;';
-    document.body.appendChild(backupDiv);
-  }
-  backupDiv.innerHTML = '';
-  
-  var titleDiv = document.createElement('div');
-  titleDiv.style.cssText = 'background:#2C3E50;color:white;padding:14px;border-radius:4px;text-align:center;font-weight:700;font-size:15px;margin-bottom:10px;';
-  titleDiv.innerText = '📋 백업 데이터 - 전체선택 후 복사!';
-  
-  var ta = document.createElement('textarea');
-  ta.value = text;
-  ta.style.cssText = 'width:100%;flex:1;padding:12px;font-size:12px;border:2px solid #ccc;border-radius:4px;resize:none;font-family:monospace;min-height:0;';
-  ta.readOnly = true;
-  
-  var btnRow = document.createElement('div');
-  btnRow.style.cssText = 'display:flex;gap:8px;margin-top:10px;';
-  
-  var copyBtn = document.createElement('button');
-  copyBtn.innerText = '📋 전체 복사하기';
-  copyBtn.style.cssText = 'flex:1;background:#FEE500;color:#3C1E1E;border:none;padding:14px;border-radius:4px;font-weight:700;font-size:15px;cursor:pointer;';
-  copyBtn.onclick = function() {
-    ta.select();
-    ta.setSelectionRange(0, 99999);
-    document.execCommand('copy');
-    copyBtn.innerText = '✅ 복사됐어요! 카톡에 붙여넣기!';
-    copyBtn.style.background = '#27AE60';
-    copyBtn.style.color = 'white';
-  };
-  
-  var closeBtn = document.createElement('button');
-  closeBtn.innerText = '← 돌아가기';
-  closeBtn.style.cssText = 'background:#7F8C8D;color:white;border:none;padding:14px 16px;border-radius:4px;font-weight:700;font-size:15px;cursor:pointer;';
-  closeBtn.onclick = function() { backupDiv.style.display='none'; };
-  
-  btnRow.appendChild(copyBtn);
-  btnRow.appendChild(closeBtn);
-  backupDiv.appendChild(titleDiv);
-  backupDiv.appendChild(ta);
-  backupDiv.appendChild(btnRow);
-  backupDiv.style.display = 'flex';
-  
-  setTimeout(function(){ ta.select(); ta.setSelectionRange(0, 99999); }, 100);
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 renderPhones();
+}
 
 function openEdit(e,i){e.stopPropagation();editIdx=i;document.getElementById('editInput').value=names[i];document.getElementById('editModal').classList.add('open');setTimeout(()=>document.getElementById('editInput').focus(),80);}
 function closeEdit(){document.getElementById('editModal').classList.remove('open');}
@@ -711,7 +638,7 @@ function setTrade(t) {
   else if(t==='ddl'){document.getElementById('optDdl').className='topt on-h';sec.classList.add('show');}
 }
 
-// ── 수익계산 (판매가=개당, 원가=개당) ──
+// ── 수익계산 (판매가=총액, 원가=개당) ──
 function calcP() {
   const cost=+document.getElementById('fCost').value||0;
   const ship=+document.getElementById('fShip').value||0;
@@ -735,7 +662,7 @@ function addRec() {
   const memo=document.getElementById('fMemo').value.trim();
   const name=color+' 5단 철제선반';
   if(!date||!sale){alert('날짜와 판매가는 필수예요! 🙏');return;}
-  const rec={id:editingId||Date.now(),date,name,color,qty,cost,ship,sale,profit:sale*qty-(cost+ship)*qty,memo,trade};
+  const rec={id:editingId||Date.now(),date,name,color,qty,cost,ship,sale,profit:sale-(cost+ship)*qty,memo,trade};
   if(trade==='myship'||trade==='ddl') {
     rec.buyer={name:document.getElementById('bName').value.trim(),phone:document.getElementById('bPhone').value.trim(),addr:document.getElementById('bAddr').value.trim(),courier:document.getElementById('bCourier').value,tracking:document.getElementById('bTracking').value.trim()};
   }
@@ -969,8 +896,8 @@ function renderAppts(){
   const list=document.getElementById('apptList');
   if(!data.length){list.innerHTML=`<div class="empty"><div class="ei">📅</div><p>약속이 없어요!</p></div>`;return;}
 
-  const TYPE_LABEL={pickup:'🤝 직거래 픽업',delivery:'📦 택배 발송',call:'📞 연락',stock:'📦 재고 가져오기',other:'📌 기타'};
-  const TYPE_CLASS={pickup:'at-pickup',delivery:'at-delivery',call:'at-call',stock:'at-pickup',other:'at-other'};
+  const TYPE_LABEL={pickup:'🤝 직거래 픽업',delivery:'📦 택배 발송',ddl:'🏍️ 배달',call:'📞 연락',stock:'📦 재고 가져오기',other:'📌 기타'};
+  const TYPE_CLASS={pickup:'at-pickup',delivery:'at-delivery',ddl:'at-delivery',call:'at-call',stock:'at-pickup',other:'at-other'};
 
   list.innerHTML=data.map(a=>{
     const isToday=a.date===today, isTmr=a.date===tmrStr;
@@ -1057,14 +984,6 @@ function saveStock(){
 }
 
 function delStock(id){if(!confirm('삭제할까요?'))return;saveStocks(getStocks().filter(s=>s.id!==id));renderStock();}
-
-function resetStockData(){
-  if(!confirm('재고 기록을 전부 삭제하고 처음부터 시작할까요?\n(이 작업은 되돌릴 수 없어요!)')) return;
-  localStorage.removeItem('stocks');
-  localStorage.removeItem('stockBase');
-  renderStock();
-  alert('초기화 완료! 이제 입고부터 다시 입력해주세요 😊');
-}
 
 function setStockFilter(f,el){stockFilter=f;document.querySelectorAll('#tab-stock .tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');renderStock();}
 
@@ -1164,4 +1083,4 @@ function fS(n){return (n/10000).toFixed(1);}
 renderPhones();
 </script>
 </body>
-</h
+</html>
