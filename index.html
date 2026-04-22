@@ -538,7 +538,7 @@ function getAppts()       { return JSON.parse(localStorage.getItem('appts')||'[]
 function saveAppts(a)     { localStorage.setItem('appts',JSON.stringify(a)); }
 function getStocks()      { return JSON.parse(localStorage.getItem('stocks')||'[]'); }
 function saveStocks(s)    { localStorage.setItem('stocks',JSON.stringify(s)); }
-function getStockBase()   { return JSON.parse(localStorage.getItem('stockBase')||'{"white":{"hand":12,"stored":84},"black":{"hand":0,"stored":0}}'); }
+function getStockBase()   { return JSON.parse(localStorage.getItem('stockBase')||'{"white":{"hand":0,"stored":0},"black":{"hand":0,"stored":0}}'); }
 function saveStockBase(b) { localStorage.setItem('stockBase',JSON.stringify(b)); }
 
 // ── 탭 ──
@@ -1061,6 +1061,7 @@ function delStock(id){if(!confirm('삭제할까요?'))return;saveStocks(getStock
 function resetStockData(){
   if(!confirm('재고 기록을 전부 삭제하고 처음부터 시작할까요?\n(이 작업은 되돌릴 수 없어요!)')) return;
   localStorage.removeItem('stocks');
+  localStorage.removeItem('stockBase');
   renderStock();
   alert('초기화 완료! 이제 입고부터 다시 입력해주세요 😊');
 }
@@ -1160,7 +1161,4 @@ function todayStr(){return new Date().toISOString().split('T')[0];}
 function fW(n){return Math.abs(n)>=10000?(n/10000).toFixed(1)+'만원':n.toLocaleString()+'원';}
 function fS(n){return (n/10000).toFixed(1);}
 
-renderPhones();
-</script>
-</body>
-</html>
+rend
