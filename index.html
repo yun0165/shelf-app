@@ -325,7 +325,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--light-bg);
         <div class="csym">−</div>
         <div class="fg"><label>🚛 배송비(원)</label><input type="number" id="fShip" placeholder="0" oninput="calcP()"></div>
         <div class="csym">+</div>
-        <div class="fg"><label>💰 판매가 <small style='color:#2980B9'>총액(원)</small></label><input type="number" id="fSale" placeholder="0" oninput="calcP()"></div>
+        <div class="fg"><label>💰 판매가 <small style='color:#2980B9'>개당(원)</small></label><input type="number" id="fSale" placeholder="0" oninput="calcP()"></div>
       </div>
       <div style="font-size:11px;font-weight:700;color:var(--steel);margin-bottom:4px">📊 예상 수익</div>
       <div class="pbox" id="profitBox">입력해주세요</div>
@@ -711,7 +711,7 @@ function setTrade(t) {
   else if(t==='ddl'){document.getElementById('optDdl').className='topt on-h';sec.classList.add('show');}
 }
 
-// ── 수익계산 (판매가=총액, 원가=개당) ──
+// ── 수익계산 (판매가=개당, 원가=개당) ──
 function calcP() {
   const cost=+document.getElementById('fCost').value||0;
   const ship=+document.getElementById('fShip').value||0;
@@ -735,7 +735,7 @@ function addRec() {
   const memo=document.getElementById('fMemo').value.trim();
   const name=color+' 5단 철제선반';
   if(!date||!sale){alert('날짜와 판매가는 필수예요! 🙏');return;}
-  const rec={id:editingId||Date.now(),date,name,color,qty,cost,ship,sale,profit:sale-(cost+ship)*qty,memo,trade};
+  const rec={id:editingId||Date.now(),date,name,color,qty,cost,ship,sale,profit:sale*qty-(cost+ship)*qty,memo,trade};
   if(trade==='myship'||trade==='ddl') {
     rec.buyer={name:document.getElementById('bName').value.trim(),phone:document.getElementById('bPhone').value.trim(),addr:document.getElementById('bAddr').value.trim(),courier:document.getElementById('bCourier').value,tracking:document.getElementById('bTracking').value.trim()};
   }
@@ -1164,4 +1164,4 @@ function fS(n){return (n/10000).toFixed(1);}
 renderPhones();
 </script>
 </body>
-</html>
+</h
