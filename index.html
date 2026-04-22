@@ -624,42 +624,69 @@ function goSelect() {
 function kakaoBackup() {
   var TRADE = {direct:'직거래', myship:'내재고택배', ddl:'둘둘랙택배'};
   var pnames = JSON.parse(localStorage.getItem('pNames') || 'null') || ['폰 1','폰 2','폰 3','폰 4','폰 5','폰 6','폰 7','폰 8'];
-  var lines = ['📦 철제선반 판매일지 백업\n' + new Date().toLocaleDateString('ko-KR') + '\n'];
+  var lines = ['📦 철제선반 판매일지 백업', new Date().toLocaleDateString('ko-KR'), ''];
   var total = 0, totalProfit = 0;
   for (var i = 0; i < 8; i++) {
     var recs = JSON.parse(localStorage.getItem('recs_' + i) || '[]');
     if (recs.length === 0) continue;
     var pname = pnames[i] || ('폰 ' + (i+1));
-    lines.push('\n[' + pname + '] ' + recs.length + '건');
+    lines.push('[' + pname + '] ' + recs.length + '건');
     recs.forEach(function(r) {
       var profit = r.profit || 0;
       totalProfit += profit;
       total++;
       lines.push(r.date + ' ' + (r.color||'') + ' ' + (TRADE[r.trade]||r.trade||'') + ' ' + (r.qty||1) + '개 수익:' + profit.toLocaleString() + '원');
     });
+    lines.push('');
   }
-  lines.push('\n총 ' + total + '건 / 총수익 ' + totalProfit.toLocaleString() + '원');
+  lines.push('총 ' + total + '건 / 총수익 ' + totalProfit.toLocaleString() + '원');
   var text = lines.join('\n');
-  var kakaoUrl = 'kakaoplus://plusfriend/talk/';
-  // 나에게 보내기 - 카카오톡 공유
-  if (navigator.share) {
-    navigator.share({ title: '철제선반 판매일지 백업', text: text });
-  } else {
-    // 클립보드 복사 후 안내
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(text).then(function() {
-        alert('📋 복사됐어요!\n카카오톡 나에게 보내기에 붙여넣기 해주세요!');
-      });
-    } else {
-      var ta = document.createElement('textarea');
-      ta.value = text;
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand('copy');
-      document.body.removeChild(ta);
-      alert('📋 복사됐어요!\n카카오톡 나에게 보내기에 붙여넣기 해주세요!');
-    }
-  }
+  
+  // 팝업 화면에 텍스트 보여주기
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;';
+  
+  var box = document.createElement('div');
+  box.style.cssText = 'background:white;border-radius:8px;width:100%;max-width:380px;max-height:80vh;display:flex;flex-direction:column;';
+  
+  var title = document.createElement('div');
+  title.style.cssText = 'padding:14px;background:#27AE60;color:white;font-weight:700;font-size:14px;border-radius:8px 8px 0 0;text-align:center;';
+  title.innerText = '📋 아래 내용을 전체선택 후 복사하세요!';
+  
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'width:100%;flex:1;padding:12px;font-size:12px;border:none;outline:none;resize:none;min-height:300px;font-family:monospace;';
+  ta.readOnly = true;
+  
+  var btnRow = document.createElement('div');
+  btnRow.style.cssText = 'display:flex;gap:8px;padding:10px;';
+  
+  var copyBtn = document.createElement('button');
+  copyBtn.innerText = '📋 전체 복사';
+  copyBtn.style.cssText = 'flex:1;background:#FEE500;color:#3C1E1E;border:none;padding:12px;border-radius:4px;font-weight:700;font-size:14px;cursor:pointer;';
+  copyBtn.onclick = function() {
+    ta.select();
+    ta.setSelectionRange(0, 99999);
+    document.execCommand('copy');
+    copyBtn.innerText = '✅ 복사됐어요!';
+    setTimeout(function(){ copyBtn.innerText = '📋 전체 복사'; }, 2000);
+  };
+  
+  var closeBtn = document.createElement('button');
+  closeBtn.innerText = '닫기';
+  closeBtn.style.cssText = 'background:#ccc;color:#333;border:none;padding:12px 16px;border-radius:4px;font-weight:700;font-size:14px;cursor:pointer;';
+  closeBtn.onclick = function() { document.body.removeChild(overlay); };
+  
+  btnRow.appendChild(copyBtn);
+  btnRow.appendChild(closeBtn);
+  box.appendChild(title);
+  box.appendChild(ta);
+  box.appendChild(btnRow);
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+  
+  // 자동 전체선택
+  setTimeout(function(){ ta.select(); ta.setSelectionRange(0, 99999); }, 100);
 }
 
 renderPhones();
