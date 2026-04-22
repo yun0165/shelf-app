@@ -1079,4 +1079,46 @@ function renderStock(){
   else if(stockFilter==='white') data=data.filter(s=>s.color==='화이트');
   else if(stockFilter==='black') data=data.filter(s=>s.color==='블랙');
 
-  const list=document.ge
+  const list=document.getElementById('stockList');
+  if(!data.length){list.innerHTML=`<div class="empty"><div class="ei">📦</div><p>기록이 없어요!</p></div>`;return;}
+
+  const TYPE_INFO={
+    in:{label:'▲ 입고',cls:'ic-in',sign:'+',qty:'plus'},
+    'out-direct':{label:'🤝 직거래 출고',cls:'ic-direct',sign:'-',qty:'minus'},
+    'out-myship':{label:'📦 내재고택배 출고',cls:'ic-myship',sign:'-',qty:'minus'},
+    'out-ddl':{label:'🏭 둘둘랙 출고',cls:'ic-ddl',sign:'',qty:''},
+    move:{label:'🔄 맡긴→내손 이동',cls:'ic-move',sign:'',qty:'orange'}
+  };
+
+  list.innerHTML=data.map(s=>{
+    const ti=TYPE_INFO[s.type]||TYPE_INFO['out-direct'];
+    const[,mo,d]=s.date.split('-');
+    const colorChip=s.color==='블랙'?'⬛':'⬜';
+    return `<div class="io-item ${s.type}${s.auto?' auto':''}">
+      <div style="position:absolute;top:7px;right:7px"><button class="del-btn" onclick="delStock(${s.id})">✕</button></div>
+      <div class="io-top">
+        <div>
+          <div class="io-meta" style="margin-bottom:3px">
+            <span>${mo}월 ${d}일</span>
+            <span class="io-chip ${ti.cls}">${ti.label}</span>
+            <span>${colorChip} ${s.color}</span>
+          </div>
+          <div class="io-info">${s.memo||ti.label}</div>
+        </div>
+        <div class="io-qty ${ti.qty}">${ti.sign}${s.qty}개</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+document.getElementById('stockModal').addEventListener('click',function(e){if(e.target===this)closeStockModal();});
+
+// ── 유틸 ──
+function todayStr(){return new Date().toISOString().split('T')[0];}
+function fW(n){return Math.abs(n)>=10000?(n/10000).toFixed(1)+'만원':n.toLocaleString()+'원';}
+function fS(n){return (n/10000).toFixed(1);}
+
+renderPhones();
+</script>
+</body>
+</html>
