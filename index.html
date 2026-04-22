@@ -592,42 +592,7 @@ function pickPhone(i) {
 function goSelect() {
   document.getElementById('phoneScreen').style.display='flex';
   document.getElementById('mainApp').style.display='none';
-  function kakaoBackup() {
-  var text = '📦 철제선반 판매일지 백업\n';
-  text += new Date().toLocaleDateString('ko-KR') + '\n\n';
-  var pnames = JSON.parse(localStorage.getItem('pNames') || 'null') || ['폰 1','폰 2','폰 3','폰 4','폰 5','폰 6','폰 7','폰 8','폰 9','폰 10'];
-  var TRADE = {direct:'직거래', myship:'내재고택배', ddl:'둘둘랙택배'};
-  var totalQty=0, totalProfit=0;
-  for (var i=0; i<10; i++) {
-    var recs = JSON.parse(localStorage.getItem('recs_'+i) || '[]');
-    if (!recs.length) continue;
-    var pname = pnames[i] || ('폰 '+(i+1));
-    text += '📱 ' + pname + '\n';
-    recs.forEach(function(r) {
-      text += r.date + ' | ' + (r.color||'') + ' | ' + (TRADE[r.trade]||r.trade||'') + ' | ' + r.qty + '개 | ' + r.sale.toLocaleString() + '원 | 수익 ' + r.profit.toLocaleString() + '원\n';
-      totalQty += r.qty;
-      totalProfit += r.profit;
-    });
-    text += '\n';
-  }
-  text += '─────────────\n';
-  text += '총 판매: ' + totalQty + '개\n';
-  text += '총 수익: ' + totalProfit.toLocaleString() + '원\n';
-  
-  if (navigator.share) {
-    navigator.share({ text: text }).catch(function(){
-      navigator.clipboard.writeText(text).then(function(){
-        alert('클립보드에 복사됐어요!\n카카오톡 열어서 붙여넣기 하세요 😊');
-      });
-    });
-  } else {
-    navigator.clipboard.writeText(text).then(function(){
-      alert('클립보드에 복사됐어요!\n카카오톡 열어서 붙여넣기 하세요 😊');
-    }).catch(function(){
-      prompt('아래 텍스트를 복사해서 카카오톡에 붙여넣으세요:', text);
-    });
-  }
-}
+
 
 function exportExcel() {
   var csv = '\uFEFF' + '폰,판매일,색상,거래방법,수량,원가(원),배송비(원),판매가총액(원),수익(원),구매자이름,연락처,주소,택배사,운송장번호,메모\n';
@@ -656,6 +621,43 @@ function exportExcel() {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+function kakaoBackup() {
+  var text = '📦 철제선반 판매일지 백업\n';
+  text += new Date().toLocaleDateString('ko-KR') + '\n\n';
+  var pnames = JSON.parse(localStorage.getItem('pNames') || 'null') || ['폰 1','폰 2','폰 3','폰 4','폰 5','폰 6','폰 7','폰 8','폰 9','폰 10'];
+  var TRADE = {direct:'직거래', myship:'내재고택배', ddl:'둘둘랙택배'};
+  var totalQty=0, totalProfit=0;
+  for (var i=0; i<10; i++) {
+    var recs = JSON.parse(localStorage.getItem('recs_'+i) || '[]');
+    if (!recs.length) continue;
+    var pname = pnames[i] || ('폰 '+(i+1));
+    text += '📱 ' + pname + '\n';
+    recs.forEach(function(r) {
+      text += r.date + ' | ' + (r.color||'') + ' | ' + (TRADE[r.trade]||r.trade||'') + ' | ' + r.qty + '개 | ' + r.sale.toLocaleString() + '원 | 수익 ' + r.profit.toLocaleString() + '원\n';
+      totalQty += r.qty;
+      totalProfit += r.profit;
+    });
+    text += '\n';
+  }
+  text += '─────────────\n';
+  text += '총 판매: ' + totalQty + '개\n';
+  text += '총 수익: ' + totalProfit.toLocaleString() + '원';
+  try {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    alert('✅ 복사 완료!\n카카오톡 나에게 보내기에 붙여넣기 하세요 😊');
+  } catch(e) {
+    prompt('아래 전체 선택 후 복사해서 카카오톡에 붙여넣으세요:', text);
+  }
 }
 
 renderPhones();
