@@ -532,7 +532,7 @@ function getAppts()       { return JSON.parse(localStorage.getItem('appts')||'[]
 function saveAppts(a)     { localStorage.setItem('appts',JSON.stringify(a)); }
 function getStocks()      { return JSON.parse(localStorage.getItem('stocks')||'[]'); }
 function saveStocks(s)    { localStorage.setItem('stocks',JSON.stringify(s)); }
-function getStockBase()   { return JSON.parse(localStorage.getItem('stockBase')||'{"white":{"hand":12},"black":{"hand":0}}'); }
+function getStockBase()   { return JSON.parse(localStorage.getItem('stockBase')||'{"white":{"hand":0},"black":{"hand":0}}'); }
 function saveStockBase(b) { localStorage.setItem('stockBase',JSON.stringify(b)); }
 
 // ── 탭 ──
