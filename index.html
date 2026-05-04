@@ -167,7 +167,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--light-bg);
 .stock-mini .sm-in{color:var(--green);font-weight:700;}
 .stock-mini .sm-out{color:var(--rust);font-weight:700;}
 
-.stock-total-bar{background:var(--iron);border-radius:4px;padding:12px;margin-bottom:14px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center;}
+.stock-total-bar{background:var(--iron);border-radius:4px;padding:12px;margin-bottom:14px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;}
 .stb-val{font-family:'Black Han Sans',sans-serif;font-size:16px;color:white;}
 .stb-val.green{color:#2ECC71;} .stb-val.red{color:#E74C3C;} .stb-val.orange{color:#F39C12;}
 .stb-lbl{font-size:9px;color:rgba(255,255,255,0.5);margin-top:2px;}
@@ -388,7 +388,6 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--light-bg);
     <div class="stock-total-bar">
       <div><div class="stb-val" id="sk-total">0</div><div class="stb-lbl">총 보유</div></div>
       <div><div class="stb-val green" id="sk-myhand">0</div><div class="stb-lbl">내 손에</div></div>
-      <div><div class="stb-val orange" id="sk-stored">0</div><div class="stb-lbl">맡긴 곳</div></div>
       <div><div class="stb-val red" id="sk-sold">0</div><div class="stb-lbl">오늘출고</div></div>
     </div>
 
@@ -397,7 +396,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--light-bg);
         <div class="stock-color">⬜</div>
         <div class="stock-name">화이트</div>
         <div class="stock-num" id="sk-white">0</div>
-        <div class="stock-sub">내손: <span id="sk-white-hand">0</span> / 맡긴: <span id="sk-white-stored">0</span></div>
+        <div class="stock-sub">현재 재고: <span id="sk-white-hand">0</span></div>
         <div class="stock-mini">
           <span class="sm-in">▲ 입고 <span id="sk-white-in">0</span></span>
           <span class="sm-out">▼ 출고 <span id="sk-white-out">0</span></span>
@@ -407,7 +406,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--light-bg);
         <div class="stock-color">⬛</div>
         <div class="stock-name">블랙</div>
         <div class="stock-num" id="sk-black">0</div>
-        <div class="stock-sub">내손: <span id="sk-black-hand">0</span> / 맡긴: <span id="sk-black-stored">0</span></div>
+        <div class="stock-sub">현재 재고: <span id="sk-black-hand">0</span></div>
         <div class="stock-mini">
           <span class="sm-in">▲ 입고 <span id="sk-black-in">0</span></span>
           <span class="sm-out">▼ 출고 <span id="sk-black-out">0</span></span>
@@ -483,8 +482,6 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--light-bg);
       <button class="io-btn" id="ioMyship" onclick="setIOType('out-myship')">📦 내재고택배</button>
       <button class="io-btn" id="ioDdl" onclick="setIOType('out-ddl')">🏭 둘둘랙출고</button>
     </div>
-    <!-- 맡긴재고 이동 -->
-    <button class="io-btn" id="ioMove" onclick="setIOType('move')" style="width:100%;margin-bottom:12px">🔄 맡긴재고 → 내손으로 가져오기</button>
 
     <div class="mgrid2">
       <div class="mfg"><label>📅 날짜</label><input type="date" id="ioDate"></div>
@@ -498,9 +495,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--light-bg);
       </select>
     </div>
     <div class="mfg" id="ioStoredNote" style="display:none">
-      <div style="background:#FFF3E0;border-radius:2px;padding:8px 10px;font-size:12px;color:#E65100">
-        💡 맡긴 재고에서 내 손으로 이동합니다
-      </div>
+      <div style="background:#FFF3E0;border-radius:2px;padding:8px 10px;font-size:12px;color:#E65100">      </div>
     </div>
     <div class="mfg"><label>📝 메모</label><textarea id="ioMemo" placeholder="예: 전주 창고에서 입고, 택배 발송 등..."></textarea></div>
     <div class="mbtns">
@@ -537,7 +532,7 @@ function getAppts()       { return JSON.parse(localStorage.getItem('appts')||'[]
 function saveAppts(a)     { localStorage.setItem('appts',JSON.stringify(a)); }
 function getStocks()      { return JSON.parse(localStorage.getItem('stocks')||'[]'); }
 function saveStocks(s)    { localStorage.setItem('stocks',JSON.stringify(s)); }
-function getStockBase()   { return JSON.parse(localStorage.getItem('stockBase')||'{"white":{"hand":12,"stored":84},"black":{"hand":0,"stored":0}}'); }
+function getStockBase()   { return JSON.parse(localStorage.getItem('stockBase')||'{"white":{"hand":12},"black":{"hand":0}}'); }
 function saveStockBase(b) { localStorage.setItem('stockBase',JSON.stringify(b)); }
 
 // ── 탭 ──
@@ -554,7 +549,7 @@ function showMainTab(id, el) {
 function renderTotalSummary() {
   let qty=0,rev=0,pro=0;
   for(let i=0;i<10;i++){
-    JSON.parse(localStorage.getItem('recs_'+i)||'[]').forEach(r=>{qty+=r.qty;rev+=r.sale*r.qty;pro+=r.profit;});
+    JSON.parse(localStorage.getItem('recs_'+i)||'[]').forEach(r=>{qty+=r.qty;rev+=r.sale;pro+=r.profit;});
   }
   document.getElementById('tsQty').textContent=qty+'개';
   document.getElementById('tsRev').textContent=fS(rev);
@@ -722,8 +717,18 @@ function addRec() {
   if(trade==='myship'||trade==='ddl') {
     rec.buyer={name:document.getElementById('bName').value.trim(),phone:document.getElementById('bPhone').value.trim(),addr:document.getElementById('bAddr').value.trim(),courier:document.getElementById('bCourier').value,tracking:document.getElementById('bTracking').value.trim()};
   }
-  // 직거래 or 내재고택배면 재고 자동차감 (새 기록일 때만)
-  if(!editingId && (trade==='direct'||trade==='myship')) {
+  // 직거래 or 내재고택배면 재고 자동차감
+  if(trade==='direct'||trade==='myship') {
+    if(editingId) {
+      // 수정 시: 기존 기록 재고 복구 후 새 수량으로 차감
+      const oldRec = getRecs().find(r=>r.id===editingId);
+      if(oldRec && (oldRec.trade==='direct'||oldRec.trade==='myship')) {
+        // 기존 자동차감 로그 제거
+        let stocks = getStocks();
+        stocks = stocks.filter(s=>!(s.auto && s.memo==='판매일지 자동차감' && s.color===oldRec.color && s.qty===oldRec.qty && s.date===oldRec.date));
+        saveStocks(stocks);
+      }
+    }
     autoDeductStock(color, qty);
   }
   let recs=getRecs();
@@ -996,11 +1001,11 @@ document.getElementById('apptModal').addEventListener('click',function(e){if(e.t
 // ══ 재고관리 ══
 function setIOType(t){
   ioType=t;
-  ['ioIn','ioOut','ioMyship','ioDdl','ioMove'].forEach(id=>{
+  ['ioIn','ioOut','ioMyship','ioDdl'].forEach(id=>{
     const el=document.getElementById(id);
     el.className='io-btn';
   });
-  const map={in:'ioIn','out-direct':'ioOut','out-myship':'ioMyship','out-ddl':'ioDdl','move':'ioMove'};
+  const map={in:'ioIn','out-direct':'ioOut','out-myship':'ioMyship','out-ddl':'ioDdl'};
   const activeEl=document.getElementById(map[t]);
   if(activeEl){
     if(t==='in') activeEl.className='io-btn on-in';
@@ -1050,14 +1055,14 @@ function calcStockSummary(){
 
   // 색상별 계산
   const summary={
-    white:{hand:base.white.hand, stored:base.white.stored, totalIn:0, totalOut:0, todayOut:0},
-    black:{hand:base.black.hand, stored:base.black.stored, totalIn:0, totalOut:0, todayOut:0}
+    white:{hand:base.white.hand, totalIn:0, totalOut:0, todayOut:0},
+    black:{hand:base.black.hand, totalIn:0, totalOut:0, todayOut:0}
   };
 
   stocks.forEach(s=>{
     const c=s.color==='블랙'?'black':'white';
     if(s.type==='in'){ summary[c].hand+=s.qty; summary[c].totalIn+=s.qty; }
-    else if(s.type==='move'){ summary[c].stored-=s.qty; summary[c].hand+=s.qty; }
+    else if(s.type==='move'){ /* 맡긴재고이동 무시 */ }
     else if(s.type==='out-ddl'){ summary[c].totalOut+=s.qty; if(s.date===today)summary[c].todayOut+=s.qty; }
     else { summary[c].hand-=s.qty; summary[c].totalOut+=s.qty; if(s.date===today)summary[c].todayOut+=s.qty; }
   });
@@ -1068,23 +1073,19 @@ function calcStockSummary(){
 function renderStock(){
   const s=calcStockSummary();
   const totalHand=(s.white.hand||0)+(s.black.hand||0);
-  const totalStored=(s.white.stored||0)+(s.black.stored||0);
   const todayOut=(s.white.todayOut||0)+(s.black.todayOut||0);
 
-  document.getElementById('sk-total').textContent=(totalHand+totalStored)+'개';
+  document.getElementById('sk-total').textContent=totalHand+'개';
   document.getElementById('sk-myhand').textContent=totalHand+'개';
-  document.getElementById('sk-stored').textContent=totalStored+'개';
   document.getElementById('sk-sold').textContent=todayOut+'개';
 
-  document.getElementById('sk-white').textContent=(s.white.hand+s.white.stored)+'개';
+  document.getElementById('sk-white').textContent=s.white.hand+'개';
   document.getElementById('sk-white-hand').textContent=s.white.hand+'개';
-  document.getElementById('sk-white-stored').textContent=s.white.stored+'개';
   document.getElementById('sk-white-in').textContent=s.white.totalIn+'개';
   document.getElementById('sk-white-out').textContent=s.white.totalOut+'개';
 
-  document.getElementById('sk-black').textContent=(s.black.hand+s.black.stored)+'개';
+  document.getElementById('sk-black').textContent=s.black.hand+'개';
   document.getElementById('sk-black-hand').textContent=s.black.hand+'개';
-  document.getElementById('sk-black-stored').textContent=s.black.stored+'개';
   document.getElementById('sk-black-in').textContent=s.black.totalIn+'개';
   document.getElementById('sk-black-out').textContent=s.black.totalOut+'개';
 
