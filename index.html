@@ -220,6 +220,32 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--light-bg);
 .nmbox h3{font-family:'Black Han Sans',sans-serif;font-size:15px;color:var(--iron);margin-bottom:11px;}
 .nmbox input{width:100%;border:2px solid #E8E0D0;border-radius:2px;padding:9px 11px;font-size:15px;font-family:'Noto Sans KR',sans-serif;outline:none;margin-bottom:11px;color:var(--iron);}
 .nmbox input:focus{border-color:var(--rust);}
+
+/* ── 날짜별 통계 ── */
+.date-stat-row{background:white;border-radius:2px;box-shadow:2px 2px 0 rgba(0,0,0,0.06);padding:12px;margin-bottom:8px;border-left:4px solid var(--blue);display:flex;justify-content:space-between;align-items:center;cursor:pointer;}
+.date-stat-row:active{opacity:0.8;}
+.date-stat-left .ds-date{font-family:'Black Han Sans',sans-serif;font-size:14px;color:var(--iron);}
+.date-stat-left .ds-count{font-size:11px;color:var(--steel);margin-top:2px;}
+.date-stat-right{text-align:right;}
+.date-stat-right .ds-rev{font-size:12px;color:var(--steel);}
+.date-stat-right .ds-profit{font-family:'Black Han Sans',sans-serif;font-size:16px;color:var(--green);}
+.date-stat-right .ds-profit.loss{color:var(--rust);}
+.ds-detail{display:none;background:var(--light-bg);border-radius:2px;padding:10px;margin-top:8px;font-size:12px;color:var(--iron);}
+.ds-detail.show{display:block;}
+.ds-detail-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dashed #D0C8B8;}
+.ds-detail-row:last-child{border-bottom:none;}
+
+/* ── 배치 마감 ── */
+.batch-card{background:white;border-radius:4px;box-shadow:4px 4px 0 rgba(0,0,0,0.08);padding:16px;margin-bottom:14px;border-top:4px solid var(--orange);}
+.batch-card-title{font-family:'Black Han Sans',sans-serif;font-size:13px;color:var(--orange);letter-spacing:1px;margin-bottom:12px;}
+.batch-history-item{background:var(--light-bg);border-radius:2px;padding:12px;margin-bottom:8px;border-left:3px solid var(--steel);}
+.batch-history-item .bh-label{font-family:'Black Han Sans',sans-serif;font-size:12px;color:var(--steel);margin-bottom:6px;}
+.batch-history-item .bh-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;text-align:center;}
+.bh-val{font-family:'Black Han Sans',sans-serif;font-size:15px;color:var(--iron);}
+.bh-val.green{color:var(--green);}
+.bh-lbl{font-size:10px;color:var(--steel);margin-top:1px;}
+.reset-danger-btn{width:100%;background:#FFEBEE;color:var(--rust);border:2px solid var(--rust);padding:12px;border-radius:2px;font-family:'Black Han Sans',sans-serif;font-size:14px;letter-spacing:1px;cursor:pointer;margin-top:8px;}
+.reset-danger-btn:active{background:var(--rust);color:white;}
 </style>
 </head>
 <body>
@@ -254,6 +280,8 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--light-bg);
     <div class="mtab active" onclick="showMainTab('sales',this)">📋 판매일지</div>
     <div class="mtab" onclick="showMainTab('appt',this)">📅 약속메모</div>
     <div class="mtab" onclick="showMainTab('stock',this)">📦 재고관리</div>
+    <div class="mtab" onclick="showMainTab('datestats',this)">📈 날짜별</div>
+    <div class="mtab" onclick="showMainTab('batch',this)">🔄 배치관리</div>
   </div>
 
   <!-- ══ 판매일지 탭 ══ -->
@@ -428,9 +456,44 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--light-bg);
     </div>
     <div id="stockList"></div>
   </div>
-</div>
+  <!-- ══ 날짜별 통계 탭 ══ -->
+  <div class="tab-screen" id="tab-datestats">
+    <div class="app-hd">
+      <h1>📈 날짜별 <span>통계</span></h1>
+      <p>언제 많이 팔렸는지 한눈에</p>
+    </div>
+    <div id="dateStatsList"></div>
+  </div>
 
-<!-- 약속 모달 -->
+  <!-- ══ 배치관리 탭 ══ -->
+  <div class="tab-screen" id="tab-batch">
+    <div class="app-hd">
+      <h1>🔄 배치 <span>관리</span></h1>
+      <p>재고 배치 마감 및 새 시작</p>
+    </div>
+
+    <!-- 현재 배치 현황 -->
+    <div class="batch-card">
+      <div class="batch-card-title">📦 현재 배치 현황</div>
+      <div class="stats-grid" id="batchCurrentStats">
+        <div class="sbox sr"><div class="sv" id="bc-qty">0</div><div class="sl">총 판매수</div></div>
+        <div class="sbox"><div class="sv" id="bc-rev">0</div><div class="sl">매출(만원)</div></div>
+        <div class="sbox sg"><div class="sv" id="bc-pro">0</div><div class="sl">수익(만원)</div></div>
+      </div>
+      <div style="font-size:11px;color:var(--steel);margin-bottom:12px;text-align:center" id="batchStartDate"></div>
+      <button class="reset-danger-btn" onclick="confirmBatchClose()">
+        📦 배치 마감하고 새로 시작하기
+      </button>
+      <div style="font-size:11px;color:var(--steel);margin-top:8px;text-align:center">기존 데이터는 아래 기록에 보관돼요</div>
+    </div>
+
+    <!-- 지난 배치 기록 -->
+    <div>
+      <div class="sec-title">📋 지난 배치 기록</div>
+      <div id="batchHistoryList"></div>
+    </div>
+  </div>
+</div>
 <div class="mwrap" id="apptModal">
   <div class="modal">
     <div class="modal-title" id="apptModalTitle">📅 약속 추가</div>
@@ -543,6 +606,8 @@ function showMainTab(id, el) {
   el.classList.add('active');
   if(id==='appt') renderAppts();
   if(id==='stock') renderStock();
+  if(id==='datestats') renderDateStats();
+  if(id==='batch') renderBatch();
 }
 
 // ── 폰선택 ──
@@ -1136,6 +1201,136 @@ document.getElementById('stockModal').addEventListener('click',function(e){if(e.
 function todayStr(){return new Date().toISOString().split('T')[0];}
 function fW(n){return Math.abs(n)>=10000?(n/10000).toFixed(1)+'만원':n.toLocaleString()+'원';}
 function fS(n){return (n/10000).toFixed(1);}
+
+// ══ 날짜별 통계 ══
+function renderDateStats() {
+  const recs = getRecs();
+  if(!recs.length){
+    document.getElementById('dateStatsList').innerHTML=`<div class="empty"><div class="ei">📈</div><p>판매 기록이 없어요!</p></div>`;
+    return;
+  }
+  // 날짜별 집계
+  const byDate = {};
+  recs.forEach(r=>{
+    if(!byDate[r.date]) byDate[r.date]={qty:0,rev:0,profit:0,items:[]};
+    byDate[r.date].qty += r.qty;
+    byDate[r.date].rev += r.sale;
+    byDate[r.date].profit += r.profit;
+    byDate[r.date].items.push(r);
+  });
+  // 날짜 내림차순
+  const dates = Object.keys(byDate).sort((a,b)=>b.localeCompare(a));
+  const TRADE_LABEL={'direct':'🤝직거래','myship':'📦택배','ddl':'🏭둘둘랙'};
+  let html='', lastM='';
+  dates.forEach(date=>{
+    const m=date.substring(0,7);
+    if(m!==lastM){
+      const[y,mo]=m.split('-');
+      // 월 합계
+      const mDates=dates.filter(d=>d.startsWith(m));
+      const mQty=mDates.reduce((a,d)=>a+byDate[d].qty,0);
+      const mPro=mDates.reduce((a,d)=>a+byDate[d].profit,0);
+      html+=`<div style="background:var(--iron);border-radius:2px;padding:10px 14px;margin:14px 0 8px;display:flex;justify-content:space-between;align-items:center">
+        <div style="font-family:'Black Han Sans',sans-serif;font-size:13px;color:white;letter-spacing:1px">${y}년 ${+mo}월</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.8)">${mQty}개 · <span style="color:#2ECC71">${fW(mPro)}</span></div>
+      </div>`;
+      lastM=m;
+    }
+    const d=byDate[date];
+    const[,mo,day]=date.split('-');
+    const detailId='ds_'+date.replace(/-/g,'');
+    html+=`<div class="date-stat-row" onclick="toggleDsDetail('${detailId}')">
+      <div class="date-stat-left">
+        <div class="ds-date">${+mo}월 ${+day}일</div>
+        <div class="ds-count">${d.qty}개 판매 · ${d.items.length}건</div>
+      </div>
+      <div class="date-stat-right">
+        <div class="ds-rev">매출 ${d.rev.toLocaleString()}원</div>
+        <div class="ds-profit ${d.profit<0?'loss':''}">${fW(d.profit)}</div>
+      </div>
+    </div>
+    <div class="ds-detail" id="${detailId}">
+      ${d.items.map(r=>`<div class="ds-detail-row">
+        <span>${r.color} · ${r.qty}개 · ${TRADE_LABEL[r.trade]||r.trade}</span>
+        <span style="color:${r.profit>=0?'var(--green)':'var(--rust)'};font-weight:700">${fW(r.profit)}</span>
+      </div>`).join('')}
+    </div>`;
+  });
+  document.getElementById('dateStatsList').innerHTML=html;
+}
+
+function toggleDsDetail(id){
+  const el=document.getElementById(id);
+  if(el) el.classList.toggle('show');
+}
+
+// ══ 배치 관리 ══
+function getBatches(){return JSON.parse(localStorage.getItem('batches')||'[]');}
+function saveBatches(b){localStorage.setItem('batches',JSON.stringify(b));}
+function getBatchStartDate(){return localStorage.getItem('batchStart')||null;}
+
+function renderBatch(){
+  // 현재 배치 통계
+  const recs=getRecs();
+  const qty=recs.reduce((a,r)=>a+r.qty,0);
+  const rev=recs.reduce((a,r)=>a+r.sale,0);
+  const pro=recs.reduce((a,r)=>a+r.profit,0);
+  document.getElementById('bc-qty').textContent=qty+'개';
+  document.getElementById('bc-rev').textContent=fS(rev);
+  document.getElementById('bc-pro').textContent=fS(pro);
+
+  const startDate=getBatchStartDate();
+  document.getElementById('batchStartDate').textContent=
+    startDate?`시작일: ${startDate.replace(/-/g,'/')} ~ 현재`:'(시작일 기록 없음)';
+
+  // 지난 배치 기록
+  const batches=getBatches().slice().reverse();
+  const histEl=document.getElementById('batchHistoryList');
+  if(!batches.length){
+    histEl.innerHTML=`<div class="empty"><div class="ei">📦</div><p>아직 마감한 배치가 없어요</p></div>`;
+    return;
+  }
+  histEl.innerHTML=batches.map((b,i)=>{
+    const idx=batches.length-i;
+    return `<div class="batch-history-item">
+      <div class="bh-label">📦 배치 ${idx}회차 · ${b.startDate||'?'} ~ ${b.endDate}</div>
+      <div class="bh-stats">
+        <div><div class="bh-val">${b.qty}개</div><div class="bh-lbl">판매수</div></div>
+        <div><div class="bh-val">${fS(b.rev)}</div><div class="bh-lbl">매출(만원)</div></div>
+        <div><div class="bh-val green">${fS(b.pro)}</div><div class="bh-lbl">수익(만원)</div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function confirmBatchClose(){
+  const recs=getRecs();
+  if(!recs.length){alert('기록된 판매 내역이 없어요!');return;}
+  const qty=recs.reduce((a,r)=>a+r.qty,0);
+  const pro=recs.reduce((a,r)=>a+r.profit,0);
+  if(!confirm(`현재 배치를 마감할게요!\n\n판매: ${qty}개\n수익: ${fW(pro)}\n\n기존 데이터는 보관되고 판매일지만 초기화돼요.\n계속할까요?`)) return;
+  // 현재 배치 저장
+  const batches=getBatches();
+  const rev=recs.reduce((a,r)=>a+r.sale,0);
+  batches.push({
+    qty, rev, pro,
+    startDate: getBatchStartDate()||recs[recs.length-1]?.date||'?',
+    endDate: todayStr(),
+    recCount: recs.length
+  });
+  saveBatches(batches);
+  // 현재 폰 판매기록 초기화
+  saveRecs([]);
+  // 재고도 초기화할지 물어보기
+  if(confirm('재고 기록도 같이 초기화할까요?\n(아니오 누르면 재고는 유지)')){
+    saveStocks([]);
+    saveStockBase({white:{hand:0},black:{hand:0}});
+  }
+  localStorage.setItem('batchStart', todayStr());
+  renderAll();
+  renderBatch();
+  alert('✅ 배치 마감 완료! 새로 시작해요 😊');
+}
 
 renderPhones();
 </script>
