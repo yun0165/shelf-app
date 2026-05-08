@@ -1207,15 +1207,33 @@ function fW(n){return Math.abs(n)>=10000?(n/10000).toFixed(1)+'만원':n.toLocal
 function fS(n){return (n/10000).toFixed(1);}
 
 // ══ 날짜별 통계 ══
+let dsMode = 'all';
+
+function setDsMode(mode) {
+  dsMode = mode;
+  document.getElementById('dsToggleAll').style.background = mode==='all' ? 'var(--iron)' : 'white';
+  document.getElementById('dsToggleAll').style.color = mode==='all' ? 'white' : 'var(--iron)';
+  document.getElementById('dsToggleCur').style.background = mode==='cur' ? 'var(--iron)' : 'white';
+  document.getElementById('dsToggleCur').style.color = mode==='cur' ? 'white' : 'var(--iron)';
+  renderDateStats();
+}
+
 function renderDateStats() {
-  const recs = getRecs();
-  if(!recs.length){
+  let allRecs = [];
+  if(dsMode === 'all') {
+    for(let i=0;i<10;i++){
+      allRecs = allRecs.concat(JSON.parse(localStorage.getItem('recs_'+i)||'[]'));
+    }
+  } else {
+    allRecs = getRecs();
+  }
+  if(!allRecs.length){
     document.getElementById('dateStatsList').innerHTML=`<div class="empty"><div class="ei">📈</div><p>판매 기록이 없어요!</p></div>`;
     return;
   }
   // 날짜별 집계
   const byDate = {};
-  recs.forEach(r=>{
+  allRecs.forEach(r=>{
     if(!byDate[r.date]) byDate[r.date]={qty:0,rev:0,profit:0,items:[]};
     byDate[r.date].qty += r.qty;
     byDate[r.date].rev += r.sale;
