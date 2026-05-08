@@ -462,6 +462,10 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--light-bg);
       <h1>📈 날짜별 <span>통계</span></h1>
       <p>언제 많이 팔렸는지 한눈에</p>
     </div>
+    <div style="display:flex;gap:8px;margin-bottom:13px;">
+      <button id="dsToggleAll" onclick="setDsMode('all')" style="flex:1;padding:9px;border:2px solid var(--iron);background:var(--iron);color:white;border-radius:2px;font-family:'Black Han Sans',sans-serif;font-size:12px;cursor:pointer;">📱 전체 폰 합산</button>
+      <button id="dsToggleCur" onclick="setDsMode('cur')" style="flex:1;padding:9px;border:2px solid var(--iron);background:white;color:var(--iron);border-radius:2px;font-family:'Black Han Sans',sans-serif;font-size:12px;cursor:pointer;">현재 폰만</button>
+    </div>
     <div id="dateStatsList"></div>
   </div>
 
@@ -1270,18 +1274,21 @@ function saveBatches(b){localStorage.setItem('batches',JSON.stringify(b));}
 function getBatchStartDate(){return localStorage.getItem('batchStart')||null;}
 
 function renderBatch(){
-  // 현재 배치 통계
-  const recs=getRecs();
-  const qty=recs.reduce((a,r)=>a+r.qty,0);
-  const rev=recs.reduce((a,r)=>a+r.sale,0);
-  const pro=recs.reduce((a,r)=>a+r.profit,0);
+  // 전체 폰 합산
+  let qty=0, rev=0, pro=0, earliest='';
+  for(let i=0;i<10;i++){
+    JSON.parse(localStorage.getItem('recs_'+i)||'[]').forEach(r=>{
+      qty+=r.qty; rev+=r.sale; pro+=r.profit;
+      if(!earliest||r.date<earliest) earliest=r.date;
+    });
+  }
   document.getElementById('bc-qty').textContent=qty+'개';
   document.getElementById('bc-rev').textContent=fS(rev);
   document.getElementById('bc-pro').textContent=fS(pro);
 
-  const startDate=getBatchStartDate();
+  const startDate=getBatchStartDate()||earliest;
   document.getElementById('batchStartDate').textContent=
-    startDate?`시작일: ${startDate.replace(/-/g,'/')} ~ 현재`:'(시작일 기록 없음)';
+    startDate?`시작일: ${startDate.replace(/-/g,'/')} ~ 현재 (전체 폰 합산)`:'기록 없음';
 
   // 지난 배치 기록
   const batches=getBatches().slice().reverse();
@@ -1304,24 +1311,19 @@ function renderBatch(){
 }
 
 function confirmBatchClose(){
-  const recs=getRecs();
-  if(!recs.length){alert('기록된 판매 내역이 없어요!');return;}
-  const qty=recs.reduce((a,r)=>a+r.qty,0);
-  const pro=recs.reduce((a,r)=>a+r.profit,0);
-  if(!confirm(`현재 배치를 마감할게요!\n\n판매: ${qty}개\n수익: ${fW(pro)}\n\n기존 데이터는 보관되고 판매일지만 초기화돼요.\n계속할까요?`)) return;
-  // 현재 배치 저장
+  let qty=0, rev=0, pro=0, earliest='';
+  for(let i=0;i<10;i++){
+    JSON.parse(localStorage.getItem('recs_'+i)||'[]').forEach(r=>{
+      qty+=r.qty; rev+=r.sale; pro+=r.profit;
+      if(!earliest||r.date<earliest) earliest=r.date;
+    });
+  }
+  if(!qty){alert('기록된 판매 내역이 없어요!');return;}
+  if(!confirm(`현재 배치를 마감할게요! (전체 폰 합산)\n\n판매: ${qty}개\n수익: ${fW(pro)}\n\n기존 데이터는 보관되고 전체 폰 판매일지가 초기화돼요.\n계속할까요?`)) return;
   const batches=getBatches();
-  const rev=recs.reduce((a,r)=>a+r.sale,0);
-  batches.push({
-    qty, rev, pro,
-    startDate: getBatchStartDate()||recs[recs.length-1]?.date||'?',
-    endDate: todayStr(),
-    recCount: recs.length
-  });
+  batches.push({qty, rev, pro, startDate:getBatchStartDate()||earliest||'?', endDate:todayStr()});
   saveBatches(batches);
-  // 현재 폰 판매기록 초기화
-  saveRecs([]);
-  // 재고도 초기화할지 물어보기
+  for(let i=0;i<10;i++) localStorage.setItem('recs_'+i,'[]');
   if(confirm('재고 기록도 같이 초기화할까요?\n(아니오 누르면 재고는 유지)')){
     saveStocks([]);
     saveStockBase({white:{hand:0},black:{hand:0}});
